@@ -167,328 +167,322 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // *** VERIFIQUE SE ESTA É A URL "RAW" MAIS ATUAL DO SEU ARQUIVO NO GITHUB ***
-        const GITHUB_EXCEL_URL = 'https://raw.githubusercontent.com/MaelHXT/painel/e1f7ca86ffd260c809330397b684144952816ac5/dadosdg.xlsx';
+    // *** VERIFIQUE SE ESTA É A URL "RAW" MAIS ATUAL DO SEU ARQUIVO NO GITHUB ***
+    const GITHUB_EXCEL_URL = 'https://raw.githubusercontent.com/MaelHXT/painel/e1f7ca86ffd260c809330397b684144952816ac5/dadosdg.xlsx';
 
-        // Configuração do Firebase - MANTIDA PARA GERENCIAR USUÁRIOS E LOGS
-        const firebaseConfig = {
-            apiKey: "AIzaSyAkSZOrfwgnthsUxdOlycLVO5WQF9rUXkw",
-            authDomain: "relatorio-agricola.firebaseapp.com",
-            projectId: "relatorio-agricola",
-            storageBucket: "relatorio-agricola.firebasestorage.app",
-            messagingSenderId: "718423859625",
-            appId: "1:718423859625:web:2549a6bd2dd3ff871a24b8"
-        };
+    // Configuração do Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyAkSZOrfwgnthsUxdOlycLVO5WQF9rUXkw",
+        authDomain: "relatorio-agricola.firebaseapp.com",
+        projectId: "relatorio-agricola",
+        storageBucket: "relatorio-agricola.firebasestorage.app",
+        messagingSenderId: "718423859625",
+        appId: "1:718423859625:web:2549a6bd2dd3ff871a24b8"
+    };
 
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-        // Sistema de Relatórios Agrícolas
-        const SYSTEM_CONFIG = {
-            unidades: { 40: 'COPI', 52: 'RAF', 60: 'IASF' },
-            frentes: { '92': 'MEC', '94': 'MAN', '135': 'MEC' },
-        };
+    // Configurações do Sistema
+    const SYSTEM_CONFIG = {
+        unidades: { 40: 'COPI', 52: 'RAF', 60: 'IASF' },
+        frentes: { '92': 'MEC', '94': 'MAN', '135': 'MEC' },
+    };
 
-        let currentUser = null;
-        let agriculturalData = [];
-        let filteredData = [];
-        let reportsTable = null;
-        let usersTable = null;
-        let logsTable = null;
-        let charts = {};
-        let systemUsers = [
-            { id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null },
-            { id: 2, username: 'dgagro', password: 'dgagro123', role: 'user', lastAccess: null }
-        ];
-        let systemLogs = [];
+    let currentUser = null;
+    let agriculturalData = [];
+    let filteredData = [];
+    let reportsTable = null;
+    let usersTable = null;
+    let logsTable = null;
+    let charts = {};
+    let systemUsers = [
+        { id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null },
+        { id: 2, username: 'dgagro', password: 'dgagro123', role: 'user', lastAccess: null }
+    ];
+    let systemLogs = [];
 
-        // =================================================================================
-        // FUNÇÃO PARA CARREGAR E PROCESSAR DADOS DO GITHUB
-        // =================================================================================
-        async function carregarDadosDoGitHub() {
-            // Verificação genérica para garantir que a URL é do tipo 'raw'
-            if (!GITHUB_EXCEL_URL || !GITHUB_EXCEL_URL.startsWith('https://raw.githubusercontent.com')) {
-                showToast('URL do arquivo Excel no GitHub não foi configurada corretamente. Use o formato "Raw".', 'error');
-                console.error("A constante GITHUB_EXCEL_URL não está configurada ou é inválida.");
-                return [];
-            }
+    // =================================================================================
+    // FUNÇÃO PARA CARREGAR E PROCESSAR DADOS DO GITHUB
+    // =================================================================================
+    async function carregarDadosDoGitHub() {
+        if (!GITHUB_EXCEL_URL || !GITHUB_EXCEL_URL.startsWith('https://raw.githubusercontent.com')) {
+            showToast('URL do arquivo Excel no GitHub não foi configurada corretamente.', 'error');
+            return [];
+        }
+        showLoading();
+        try {
+            const response = await fetch(GITHUB_EXCEL_URL);
+            if (!response.ok) throw new Error(`Erro de rede: ${response.statusText}`);
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            if (jsonData.length === 0) throw new Error('A planilha do GitHub está vazia.');
 
-            showLoading();
-            try {
-                const response = await fetch(GITHUB_EXCEL_URL);
-                if (!response.ok) {
-                    throw new Error(`Erro de rede ao buscar arquivo: ${response.statusText}`);
+            // *** NOVA FUNÇÃO AUXILIAR PARA LER NÚMEROS CORRETAMENTE ***
+            const parseNumeroBrasileiro = (valor) => {
+                if (!valor) return 0;
+                // Converte para string, remove pontos de milhar, e troca vírgula por ponto
+                const valorLimpo = String(valor).replace(/\./g, '').replace(',', '.');
+                const numero = parseFloat(valorLimpo);
+                // Se o resultado não for um número (ex: texto na célula), retorna 0
+                return isNaN(numero) ? 0 : numero;
+            };
+
+            const processedData = jsonData.map(row => {
+                const required = ['Unidade', 'Data', 'Entrada de Cana (t)', 'Frente'];
+                if (required.some(col => !row.hasOwnProperty(col))) {
+                    console.warn('Linha ignorada por falta de colunas obrigatórias:', row);
+                    return null;
                 }
-                const arrayBuffer = await response.arrayBuffer();
-                const workbook = XLSX.read(arrayBuffer, { type: "array" });
-                const sheetName = workbook.SheetNames[0];
-                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-                if (jsonData.length === 0) throw new Error('A planilha do GitHub está vazia.');
-
-                const processedData = jsonData.map((row) => {
-                    const required = ['Unidade', 'Data', 'Entrada de Cana (t)', 'Frente'];
-                    if (required.some(col => !row.hasOwnProperty(col))) {
-                        console.warn('Linha ignorada por não ter todas as colunas obrigatórias:', row);
-                        return null;
-                    }
-                    
-                    return {
-                        codFrente: String(row['Frente'] || ''),
-                        unidade: row['Unidade'], 
-                        data: formatExcelDate(row['Data']), 
-                        descricaoFrente: row['Descrição Frente'] || '',
-                        codFazenda: String(row['Cód. Fazenda'] || ''), 
-                        zona: parseInt(row['Zona']) || 0, 
-                        talhao: parseInt(row['Talhão']) || 0,
-                        entradaCana: parseFloat(row['Entrada de Cana (t)']) || 0, 
-                        atr: parseFloat(row['ATR (kg/t)']) || 0,
-                        raioMedio: parseFloat(row['Raio Médio (km)']) || 0, 
-                        impurezaMineral: parseFloat(row['Impureza Mineral']) || 0
-                    };
-                }).filter(item => item && item.unidade && item.entradaCana > 0);
-
-                if (processedData.length === 0) throw new Error('Nenhum registro válido encontrado. Verifique se as colunas obrigatórias (Unidade, Data, Frente, Entrada de Cana (t)) existem e estão preenchidas na planilha.');
-                
-                showToast(`Sucesso! ${processedData.length} registros carregados do GitHub.`, 'success');
-                return processedData;
-
-            } catch (error) {
-                console.error('Erro ao carregar ou processar dados do GitHub:', error);
-                showToast(`Falha ao carregar dados do GitHub: ${error.message}`, 'error');
-                return []; 
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // Funções de gerenciamento de usuários e logs (mantidas com Firebase)
-        async function salvarUsuariosFirebase(usuarios) { try { await db.collection('configuracao').doc('usuarios').set({ usuarios }); } catch (e) { console.error(e); } }
-        async function carregarUsuariosFirebase() { try { const doc = await db.collection('configuracao').doc('usuarios').get(); if (doc.exists && doc.data().usuarios.length > 0) { return doc.data().usuarios; } await salvarUsuariosFirebase(systemUsers); return systemUsers; } catch (e) { console.error(e); return systemUsers; } }
-        async function salvarLogsFirebase(logs) { try { await db.collection('configuracao').doc('logs').set({ logs: logs.slice(0, 100) }); } catch (e) { console.error(e); } }
-        async function carregarLogsFirebase() { try { const doc = await db.collection('configuracao').doc('logs').get(); return doc.exists ? doc.data().logs || [] : []; } catch (e) { console.error(e); return []; } }
-
-        function showLoading() { document.getElementById('loadingOverlay').classList.remove('d-none'); }
-        function hideLoading() { document.getElementById('loadingOverlay').classList.add('d-none'); }
-
-        function showToast(message, type = 'info') {
-            const toastContainer = document.getElementById('toastContainer');
-            const toastType = type === 'error' ? 'danger' : type;
-            const toastHTML = `<div class="toast align-items-center text-white bg-${toastType} border-0" role="alert"><div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
-            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-            const newToast = toastContainer.lastElementChild;
-            new bootstrap.Toast(newToast).show();
-            newToast.addEventListener('hidden.bs.toast', () => newToast.remove());
-        }
-
-        async function logActivity(action, details = '') {
-            const logEntry = { timestamp: new Date().toISOString(), user: currentUser?.username || 'Sistema', action, details };
-            systemLogs.unshift(logEntry);
-            await salvarLogsFirebase(systemLogs);
-        }
-
-        function formatDateTime(dateString) { return new Date(dateString).toLocaleString('pt-BR'); }
-        function formatNumber(num, decimals = 1) { return Number(num).toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }); }
-
-        async function initializeApp() {
-            try {
-                [systemUsers, systemLogs] = await Promise.all([carregarUsuariosFirebase(), carregarLogsFirebase()]);
-                document.getElementById('loginForm').addEventListener('submit', handleLogin);
-                showLoginScreen();
-                logActivity('Sistema iniciado');
-            } catch (error) {
-                console.error("Erro fatal na inicialização:", error);
-                document.body.innerHTML = '<div style="padding: 20px; text-align: center; color: red;"><h1>Erro na Inicialização</h1><p>Não foi possível conectar aos serviços necessários. Verifique o console para mais detalhes.</p></div>';
-            }
-        }
-
-        function handleLogin(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const user = systemUsers.find(u => u.username === username && u.password === password);
-            if (user) {
-                currentUser = user;
-                user.lastAccess = new Date().toISOString();
-                logActivity('Login realizado', `Usuário: ${username}`);
-                showToast('Login realizado com sucesso! Carregando dados do GitHub...', 'success');
-                showMainApp();
-            } else {
-                showToast('Usuário ou senha incorretos.', 'error');
-            }
-        }
-        
-        async function showMainApp() {
-            document.getElementById('loginScreen').classList.add('d-none');
-            document.getElementById('mainApp').classList.remove('d-none');
-            document.getElementById('currentUser').textContent = currentUser.username;
-            document.getElementById('adminMenu').style.display = currentUser.role === 'admin' ? 'block' : 'none';
-            
-            agriculturalData = await carregarDadosDoGitHub();
-
-            showSection('dashboard');
-        }
-
-        function logout() {
-            logActivity('Logout realizado');
-            currentUser = null;
-            agriculturalData = []; 
-            showLoginScreen();
-        }
-
-        function showLoginScreen() {
-            document.getElementById('loginScreen').classList.remove('d-none');
-            document.getElementById('mainApp').classList.add('d-none');
-        }
-
-        function showSection(sectionId) {
-            ['dashboardSection', 'reportsSection', 'adminSection'].forEach(s => document.getElementById(s).classList.add('d-none'));
-            document.getElementById(sectionId + 'Section').classList.remove('d-none');
-            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-            document.querySelector(`.nav-link[onclick="showSection('${sectionId}')"]`).classList.add('active');
-            
-            switch (sectionId) {
-                case 'dashboard': loadDashboard(); break;
-                case 'reports': loadReports(); break;
-                case 'admin':
-                    if (currentUser.role === 'admin') loadAdmin();
-                    else { showToast('Acesso negado.', 'error'); showSection('dashboard'); }
-                    break;
-            }
-        }
-        
-        function loadDashboard() {
-            const data2025 = agriculturalData.filter(item => item.data && new Date(item.data).getUTCFullYear() === 2025);
-            if (data2025.length === 0) {
-                document.getElementById('totalCana').textContent = 'Sem dados';
-                document.getElementById('atrMedio').textContent = 'Sem dados';
-                document.getElementById('distMedia').textContent = 'Sem dados';
-                document.getElementById('impurezaMedia').textContent = 'Sem dados';
-            } else {
-                const totalCana = data2025.reduce((sum, item) => sum + item.entradaCana, 0);
-                document.getElementById('totalCana').textContent = formatNumber(totalCana, 1) + ' t';
-                document.getElementById('atrMedio').textContent = formatNumber(totalCana > 0 ? data2025.reduce((sum, item) => sum + (item.atr * item.entradaCana), 0) / totalCana : 0, 1) + ' kg/t';
-                document.getElementById('distMedia').textContent = formatNumber(data2025.length > 0 ? data2025.reduce((sum, item) => sum + item.raioMedio, 0) / data2025.length : 0, 1) + ' km';
-                document.getElementById('impurezaMedia').textContent = formatNumber(data2025.length > 0 ? data2025.reduce((sum, item) => sum + item.impurezaMineral, 0) / data2025.length : 0, 1) + '%';
-            }
-
-            const hasData = data2025.length > 0;
-            document.getElementById('unidadeChart').classList.toggle('d-none', !hasData);
-            document.getElementById('frenteChart').classList.toggle('d-none', !hasData);
-            document.querySelectorAll('#dashboardSection .card-body .text-center').forEach(el => el.style.display = hasData ? 'none' : 'block');
-
-            if(hasData) {
-                createChart('unidadeChart', 'doughnut', data2025.reduce((acc, item) => { acc[item.unidade] = (acc[item.unidade] || 0) + item.entradaCana; return acc; }, {}));
-                createChart('frenteChart', 'bar', data2025.reduce((acc, item) => {
-                    if (item.codFrente) {
-                        const frenteCode = item.codFrente;
-                        const frenteLabel = `${frenteCode} - ${SYSTEM_CONFIG.frentes[frenteCode] || 'N/A'}`;
-                        acc[frenteLabel] = (acc[frenteLabel] || 0) + item.entradaCana;
-                    }
-                    return acc;
-                }, {}));
-            }
-        }
-        
-        function createChart(chartId, type, data) {
-            const ctx = document.getElementById(chartId).getContext('2d');
-            if (charts[chartId]) charts[chartId].destroy();
-            const chartData = { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#2E7D32', '#4CAF50', '#FF9800', '#2196F3', '#f44336'], borderWidth: type === 'doughnut' ? 2 : 1 }] };
-            const options = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', position: 'bottom' } }, scales: { y: { beginAtZero: true, display: type === 'bar' } } };
-            charts[chartId] = new Chart(ctx, { type, data: chartData, options });
-        }
-
-        function loadReports() {
-            initializeReportsTable();
-            aplicarFiltros(true);
-            updateReportButtons();
-        }
-
-        function initializeReportsTable() {
-            if ($.fn.DataTable.isDataTable('#reportsTable')) return;
-            reportsTable = $('#reportsTable').DataTable({
-                language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json', emptyTable: '<div class="text-center py-4 text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><br>Nenhum dado disponível. Verifique o arquivo no GitHub.</div>' },
-                pageLength: 25,
-                responsive: true,
-                order: [[2, 'asc'], [3, 'asc'], [4, 'asc']],
-                columnDefs: [ { targets: [5, 6, 7, 8, 9], className: 'text-end' } ]
-            });
-        }
-        
-        function aplicarFiltros(isInitialLoad = false) {
-            if (agriculturalData.length === 0) {
-                filteredData = [];
-            } else {
-                const filters = {
-                    dataInicio: document.getElementById('dataInicio').value, dataFim: document.getElementById('dataFim').value,
-                    unidade: document.getElementById('filtroUnidade').value, frente: document.getElementById('filtroFrente').value,
-                    fazenda: document.getElementById('filtroFazenda').value.toLowerCase(), zona: document.getElementById('filtroZona').value
+                return {
+                    codFrente: String(row['Frente'] || ''),
+                    unidade: row['Unidade'], 
+                    data: formatExcelDate(row['Data']), 
+                    descricaoFrente: row['Descrição Frente'] || '',
+                    codFazenda: String(row['Cód. Fazenda'] || ''), 
+                    zona: parseInt(row['Zona']) || 0, 
+                    talhao: parseInt(row['Talhão']) || 0,
+                    // *** MUDANÇA APLICADA AQUI E NOS CAMPOS ABAIXO ***
+                    entradaCana: parseNumeroBrasileiro(row['Entrada de Cana (t)']), 
+                    atr: parseNumeroBrasileiro(row['ATR (kg/t)']),
+                    raioMedio: parseNumeroBrasileiro(row['Raio Médio (km)']), 
+                    impurezaMineral: parseNumeroBrasileiro(row['Impureza Mineral'])
                 };
-                filteredData = agriculturalData.filter(item => 
-                    (!filters.dataInicio || item.data >= filters.dataInicio) && 
-                    (!filters.dataFim || item.data <= filters.dataFim) &&
-                    (!filters.unidade || item.unidade === filters.unidade) && 
-                    (!filters.frente || item.codFrente === filters.frente) &&
-                    (!filters.fazenda || String(item.codFazenda).toLowerCase().includes(filters.fazenda)) && 
-                    (!filters.zona || item.zona == filters.zona)
-                );
-                if (!isInitialLoad) showToast(`${filteredData.length} registros encontrados.`, 'success');
-            }
-            updateReportsTable();
-            updateSummaryCards();
-        }
+            }).filter(item => item && item.unidade); // Permitir itens com entradaCana = 0
 
-        function limparFiltros() {
-            if (agriculturalData.length === 0) return;
-            ['dataInicio', 'dataFim', 'filtroUnidade', 'filtroFrente', 'filtroFazenda', 'filtroZona'].forEach(id => document.getElementById(id).value = '');
-            aplicarFiltros(true);
-            showToast('Filtros limpos.', 'info');
+            if (processedData.length === 0) throw new Error('Nenhum registro válido encontrado na planilha.');
+            showToast(`Sucesso! ${processedData.length} registros carregados.`, 'success');
+            return processedData;
+        } catch (error) {
+            console.error('Erro ao carregar dados do GitHub:', error);
+            showToast(`Falha ao carregar dados: ${error.message}`, 'error');
+            return []; 
+        } finally {
+            hideLoading();
         }
+    }
 
-        function updateReportButtons() {
-            const hasData = agriculturalData.length > 0;
-            ['btnAplicarFiltros', 'btnLimparFiltros', 'btnExportarExcel', 'btnExportarPDF'].forEach(id => document.getElementById(id).disabled = !hasData);
-            document.getElementById('msgSemDados').style.display = hasData ? 'none' : 'block';
+    // Funções de gerenciamento de usuários e logs (mantidas com Firebase)
+    async function salvarUsuariosFirebase(usuarios) { try { await db.collection('configuracao').doc('usuarios').set({ usuarios }); } catch (e) { console.error(e); } }
+    async function carregarUsuariosFirebase() { try { const doc = await db.collection('configuracao').doc('usuarios').get(); if (doc.exists && doc.data().usuarios.length > 0) { return doc.data().usuarios; } await salvarUsuariosFirebase(systemUsers); return systemUsers; } catch (e) { console.error(e); return systemUsers; } }
+    async function salvarLogsFirebase(logs) { try { await db.collection('configuracao').doc('logs').set({ logs: logs.slice(0, 100) }); } catch (e) { console.error(e); } }
+    async function carregarLogsFirebase() { try { const doc = await db.collection('configuracao').doc('logs').get(); return doc.exists ? doc.data().logs || [] : []; } catch (e) { console.error(e); return []; } }
+
+    function showLoading() { document.getElementById('loadingOverlay').classList.remove('d-none'); }
+    function hideLoading() { document.getElementById('loadingOverlay').classList.add('d-none'); }
+
+    function showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastType = type === 'error' ? 'danger' : type;
+        const toastHTML = `<div class="toast align-items-center text-white bg-${toastType} border-0" role="alert"><div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        const newToast = new bootstrap.Toast(toastContainer.lastElementChild);
+        newToast.show();
+    }
+
+    async function logActivity(action, details = '') {
+        const logEntry = { timestamp: new Date().toISOString(), user: currentUser?.username || 'Sistema', action, details };
+        systemLogs.unshift(logEntry);
+        await salvarLogsFirebase(systemLogs);
+    }
+
+    function formatDateTime(dateString) { return new Date(dateString).toLocaleString('pt-BR'); }
+    function formatNumber(num, decimals = 1) { return Number(num).toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }); }
+
+    async function initializeApp() {
+        try {
+            [systemUsers, systemLogs] = await Promise.all([carregarUsuariosFirebase(), carregarLogsFirebase()]);
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            showLoginScreen();
+            logActivity('Sistema iniciado');
+        } catch (error) {
+            console.error("Erro fatal na inicialização:", error);
+            document.body.innerHTML = `<div style="padding: 20px; text-align: center; color: red;"><h1>Erro na Inicialização</h1><p>Não foi possível conectar aos serviços. Verifique o console (F12).</p></div>`;
         }
+    }
 
-        function updateSummaryCards() {
-            document.getElementById('summaryCards').style.display = agriculturalData.length === 0 ? 'none' : 'flex';
-            if (filteredData.length === 0) {
-                document.getElementById('summaryToneladas').textContent = '0 t'; document.getElementById('summaryDistancia').textContent = '0 km';
-                document.getElementById('summaryImpureza').textContent = '0%'; document.getElementById('summaryATR').textContent = '0 kg/t'; return;
-            }
-            const totalToneladas = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
-            document.getElementById('summaryToneladas').textContent = formatNumber(totalCana, 1) + ' t';
-            document.getElementById('summaryDistancia').textContent = formatNumber(filteredData.length > 0 ? filteredData.reduce((sum, item) => sum + item.raioMedio, 0) / filteredData.length : 0, 1) + ' km';
-            document.getElementById('summaryImpureza').textContent = formatNumber(filteredData.length > 0 ? filteredData.reduce((sum, item) => sum + item.impurezaMineral, 0) / filteredData.length : 0, 1) + '%';
-            document.getElementById('summaryATR').textContent = formatNumber(totalToneladas > 0 ? filteredData.reduce((sum, item) => sum + (item.atr * item.entradaCana), 0) / totalToneladas : 0, 1) + ' kg/t';
+    function handleLogin(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const user = systemUsers.find(u => u.username === username && u.password === password);
+        if (user) {
+            currentUser = user;
+            user.lastAccess = new Date().toISOString();
+            logActivity('Login realizado', `Usuário: ${username}`);
+            showToast('Login realizado! Carregando dados do GitHub...', 'success');
+            showMainApp();
+        } else {
+            showToast('Usuário ou senha incorretos.', 'error');
         }
+    }
+    
+    async function showMainApp() {
+        document.getElementById('loginScreen').classList.add('d-none');
+        document.getElementById('mainApp').classList.remove('d-none');
+        document.getElementById('currentUser').textContent = currentUser.username;
+        document.getElementById('adminMenu').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        agriculturalData = await carregarDadosDoGitHub();
+        showSection('dashboard');
+    }
 
-        function updateReportsTable() {
-            if (!reportsTable) return;
-            reportsTable.clear();
-            if (filteredData.length > 0) {
-                const totalCana = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
-                const groupedData = filteredData.reduce((acc, item) => {
-                    const key = `${item.codFazenda}-${item.zona}-${item.talhao}`;
-                    if (!acc[key]) {
-                        acc[key] = {
-                            unidade: item.unidade, codFazenda: item.codFazenda, zona: item.zona, talhao: item.talhao,
-                            entradaCana: 0, atrSum: 0, raioMedioSum: 0, impurezaMineralSum: 0, count: 0, frentes: new Set()
-                        };
-                    }
-                    const group = acc[key];
-                    group.entradaCana += item.entradaCana;
-                    group.atrSum += item.atr * item.entradaCana;
-                    group.raioMedioSum += item.raioMedio * item.entradaCana;
-                    group.impurezaMineralSum += item.impurezaMineral * item.entradaCana;
-                    if (item.codFrente) {
-                        group.frentes.add(item.codFrente);
-                    }
-                    return acc;
-                }, {});
-            
+    function logout() {
+        logActivity('Logout realizado');
+        currentUser = null;
+        agriculturalData = []; 
+        showLoginScreen();
+    }
+
+    function showLoginScreen() {
+        document.getElementById('loginScreen').classList.remove('d-none');
+        document.getElementById('mainApp').classList.add('d-none');
+        document.getElementById('loginForm').reset();
+    }
+
+    function showSection(sectionId) {
+        ['dashboardSection', 'reportsSection', 'adminSection'].forEach(s => document.getElementById(s).classList.add('d-none'));
+        document.getElementById(sectionId + 'Section').classList.remove('d-none');
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelector(`.nav-link[onclick="showSection('${sectionId}')"]`).classList.add('active');
+        
+        switch (sectionId) {
+            case 'dashboard': loadDashboard(); break;
+            case 'reports': loadReports(); break;
+            case 'admin':
+                if (currentUser.role === 'admin') loadAdmin();
+                else { showToast('Acesso negado.', 'error'); showSection('dashboard'); }
+                break;
+        }
+    }
+    
+    function loadDashboard() {
+        const data2025 = agriculturalData.filter(item => item.data && new Date(item.data).getUTCFullYear() === 2025);
+        if (data2025.length === 0) {
+            ['totalCana', 'atrMedio', 'distMedia', 'impurezaMedia'].forEach(id => document.getElementById(id).textContent = 'Sem dados');
+        } else {
+            const totalCana = data2025.reduce((sum, item) => sum + item.entradaCana, 0);
+            document.getElementById('totalCana').textContent = formatNumber(totalCana, 1) + ' t';
+            document.getElementById('atrMedio').textContent = formatNumber(totalCana > 0 ? data2025.reduce((sum, item) => sum + (item.atr * item.entradaCana), 0) / totalCana : 0, 1) + ' kg/t';
+            document.getElementById('distMedia').textContent = formatNumber(data2025.length > 0 ? data2025.reduce((sum, item) => sum + item.raioMedio, 0) / data2025.length : 0, 1) + ' km';
+            document.getElementById('impurezaMedia').textContent = formatNumber(data2025.length > 0 ? data2025.reduce((sum, item) => sum + item.impurezaMineral, 0) / data2025.length : 0, 1) + '%';
+        }
+        const hasData = data2025.length > 0;
+        document.getElementById('unidadeChart').classList.toggle('d-none', !hasData);
+        document.getElementById('frenteChart').classList.toggle('d-none', !hasData);
+        document.querySelectorAll('#dashboardSection .card-body .text-center').forEach(el => el.style.display = hasData ? 'none' : 'block');
+        if(hasData) {
+            createChart('unidadeChart', 'doughnut', data2025.reduce((acc, item) => { acc[item.unidade] = (acc[item.unidade] || 0) + item.entradaCana; return acc; }, {}));
+            createChart('frenteChart', 'bar', data2025.reduce((acc, item) => {
+                if (item.codFrente) {
+                    const frenteCode = item.codFrente;
+                    const frenteLabel = `${frenteCode} - ${SYSTEM_CONFIG.frentes[frenteCode] || 'N/A'}`;
+                    acc[frenteLabel] = (acc[frenteLabel] || 0) + item.entradaCana;
+                }
+                return acc;
+            }, {}));
+        }
+    }
+    
+    function createChart(chartId, type, data) {
+        const ctx = document.getElementById(chartId).getContext('2d');
+        if (charts[chartId]) charts[chartId].destroy();
+        const chartData = { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#2E7D32', '#4CAF50', '#FF9800', '#2196F3', '#f44336'], borderWidth: type === 'doughnut' ? 2 : 1 }] };
+        const options = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', position: 'bottom' } }, scales: { y: { beginAtZero: true, display: type === 'bar' } } };
+        charts[chartId] = new Chart(ctx, { type, data: chartData, options });
+    }
+
+    function loadReports() {
+        initializeReportsTable();
+        aplicarFiltros(true);
+        updateReportButtons();
+    }
+
+    function initializeReportsTable() {
+        if ($.fn.DataTable.isDataTable('#reportsTable')) return;
+        reportsTable = $('#reportsTable').DataTable({
+            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json', emptyTable: '<div class="text-center py-4 text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><br>Nenhum dado disponível. Verifique o arquivo no GitHub.</div>' },
+            pageLength: 25, responsive: true, order: [[2, 'asc'], [3, 'asc'], [4, 'asc']],
+            columnDefs: [ { targets: [5, 6, 7, 8, 9], className: 'text-end' } ]
+        });
+    }
+    
+    function aplicarFiltros(isInitialLoad = false) {
+        if (agriculturalData.length === 0) {
+            filteredData = [];
+        } else {
+            const filters = {
+                dataInicio: document.getElementById('dataInicio').value, dataFim: document.getElementById('dataFim').value,
+                unidade: document.getElementById('filtroUnidade').value, frente: document.getElementById('filtroFrente').value,
+                fazenda: document.getElementById('filtroFazenda').value.toLowerCase(), zona: document.getElementById('filtroZona').value
+            };
+            filteredData = agriculturalData.filter(item => 
+                (!filters.dataInicio || item.data >= filters.dataInicio) && 
+                (!filters.dataFim || item.data <= filters.dataFim) &&
+                (!filters.unidade || item.unidade === filters.unidade) && 
+                (!filters.frente || item.codFrente === filters.frente) &&
+                (!filters.fazenda || String(item.codFazenda).toLowerCase().includes(filters.fazenda)) && 
+                (!filters.zona || item.zona == filters.zona)
+            );
+            if (!isInitialLoad) showToast(`${filteredData.length} registros encontrados.`, 'success');
+        }
+        updateReportsTable();
+        updateSummaryCards();
+    }
+
+    function limparFiltros() {
+        if (agriculturalData.length === 0) return;
+        ['dataInicio', 'dataFim', 'filtroUnidade', 'filtroFrente', 'filtroFazenda', 'filtroZona'].forEach(id => document.getElementById(id).value = '');
+        aplicarFiltros(true);
+        showToast('Filtros limpos.', 'info');
+    }
+
+    function updateReportButtons() {
+        const hasData = agriculturalData.length > 0;
+        ['btnAplicarFiltros', 'btnLimparFiltros', 'btnExportarExcel', 'btnExportarPDF'].forEach(id => document.getElementById(id).disabled = !hasData);
+        document.getElementById('msgSemDados').style.display = hasData ? 'none' : 'block';
+    }
+
+    function updateSummaryCards() {
+        document.getElementById('summaryCards').style.display = agriculturalData.length === 0 ? 'none' : 'flex';
+        if (filteredData.length === 0) {
+            document.getElementById('summaryToneladas').textContent = '0 t';
+            document.getElementById('summaryDistancia').textContent = '0 km';
+            document.getElementById('summaryImpureza').textContent = '0%';
+            document.getElementById('summaryATR').textContent = '0 kg/t';
+            return;
+        }
+        const totalToneladas = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
+        document.getElementById('summaryToneladas').textContent = formatNumber(totalToneladas, 1) + ' t';
+        document.getElementById('summaryDistancia').textContent = formatNumber(filteredData.length > 0 ? filteredData.reduce((sum, item) => sum + item.raioMedio, 0) / filteredData.length : 0, 1) + ' km';
+        document.getElementById('summaryImpureza').textContent = formatNumber(filteredData.length > 0 ? filteredData.reduce((sum, item) => sum + item.impurezaMineral, 0) / filteredData.length : 0, 1) + '%';
+        document.getElementById('summaryATR').textContent = formatNumber(totalToneladas > 0 ? filteredData.reduce((sum, item) => sum + (item.atr * item.entradaCana), 0) / totalToneladas : 0, 1) + ' kg/t';
+    }
+
+    function updateReportsTable() {
+        if (!reportsTable) return;
+        reportsTable.clear();
+        if (filteredData.length > 0) {
+            const totalCana = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
+            const groupedData = filteredData.reduce((acc, item) => {
+                const key = `${item.codFazenda}-${item.zona}-${item.talhao}`;
+                if (!acc[key]) {
+                    acc[key] = {
+                        unidade: item.unidade, codFazenda: item.codFazenda, zona: item.zona, talhao: item.talhao,
+                        entradaCana: 0, atrSum: 0, raioMedioSum: 0, impurezaMineralSum: 0, count: 0, frentes: new Set()
+                    };
+                }
+                const group = acc[key];
+                group.entradaCana += item.entradaCana;
+                group.atrSum += item.atr * item.entradaCana;
+                group.raioMedioSum += item.raioMedio * item.entradaCana;
+                group.impurezaMineralSum += item.impurezaMineral * item.entradaCana;
+                if (item.codFrente) group.frentes.add(item.codFrente);
+                return acc;
+            }, {});
+        
             Object.values(groupedData).forEach(group => {
                 const frenteDesc = [...group.frentes].map(f => `${f}-${SYSTEM_CONFIG.frentes[f] || ''}`).join(', ');
                 reportsTable.row.add([
@@ -525,7 +519,7 @@
     }
     
     function formatExcelDate(excelDate) {
-         if (!excelDate) return new Date().toISOString().slice(0, 10);
+        if (!excelDate) return null;
         if (typeof excelDate === 'number') {
             return new Date((excelDate - 25569) * 86400 * 1000).toISOString().slice(0, 10);
         }
@@ -534,12 +528,17 @@
             if (parts.length === 3) {
                 const day = parts[0];
                 const month = parts[1];
-                const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
-                const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
-                if (!isNaN(date)) return date.toISOString().slice(0, 10);
+                const year = parts[2];
+                if (day && month && year && year.length === 4) {
+                    const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                    if (!isNaN(date)) {
+                        return date.toISOString().slice(0, 10);
+                    }
+                }
             }
         }
-        return new Date().toISOString().slice(0, 10);
+        console.warn("Formato de data não reconhecido:", excelDate);
+        return null;
     }
     
     const userModal = new bootstrap.Modal(document.getElementById('userModal'));
