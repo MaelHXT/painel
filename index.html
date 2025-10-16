@@ -168,7 +168,7 @@
 
     <script>
         // *** PASSO IMPORTANTE: COLE A URL "RAW" DO SEU ARQUIVO EXCEL DO GITHUB AQUI ***
-        const GITHUB_EXCEL_URL = 'https://raw.githubusercontent.com/SEU-USUARIO/SEU-REPOSITORIO/main/nome-do-arquivo.xlsx';
+        const GITHUB_EXCEL_URL = 'https://github.com/MaelHXT/painel/blob/3352a006a85c670580177d4c4f4eb8713aca2314/dados.xlsx';
 
         // Configuração do Firebase - MANTIDA PARA GERENCIAR USUÁRIOS E LOGS
         const firebaseConfig = {
@@ -207,7 +207,7 @@
         // NOVA FUNÇÃO PARA CARREGAR E PROCESSAR DADOS DO GITHUB
         // =================================================================================
         async function carregarDadosDoGitHub() {
-            if (!GITHUB_EXCEL_URL || !GITHUB_EXCEL_URL.startsWith('https://github.com/MaelHXT/painel/blob/main/dados_entrega_outubro%201.xlsx')) {
+            if (!GITHUB_EXCEL_URL || !GITHUB_EXCEL_URL.startsWith('https://github.com/MaelHXT/painel/blob/3352a006a85c670580177d4c4f4eb8713aca2314/dados.xlsx')) {
                 showToast('URL do arquivo Excel no GitHub não foi configurada corretamente.', 'error');
                 console.error("A constante GITHUB_EXCEL_URL não está configurada ou é inválida.");
                 return [];
@@ -540,3 +540,4 @@
     </script>
 </body>
 </html>
+
