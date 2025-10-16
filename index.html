@@ -1,321 +1,493 @@
-<script>
-    // *** URL CORRIGIDA PARA O FORMATO "RAW" ***
-    const GITHUB_EXCEL_URL = 'https://raw.githubusercontent.com/MaelHXT/painel/e1f7ca86ffd260c809330397b684144952816ac5/dadosdg.xlsx';
-
-    // Configuração do Firebase - MANTIDA PARA GERENCIAR USUÁRIOS E LOGS
-    const firebaseConfig = {
-        apiKey: "AIzaSyAkSZOrfwgnthsUxdOlycLVO5WQF9rUXkw",
-        authDomain: "relatorio-agricola.firebaseapp.com",
-        projectId: "relatorio-agricola",
-        storageBucket: "relatorio-agricola.firebasestorage.app",
-        messagingSenderId: "718423859625",
-        appId: "1:718423859625:web:2549a6bd2dd3ff871a24b8"
-    };
-
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // Sistema de Relatórios Agrícolas
-    const SYSTEM_CONFIG = {
-        unidades: { 40: 'COPI', 52: 'RAF', 60: 'IASF' },
-        frentes: { '92': 'MEC', '94': 'MAN', '135': 'MEC' },
-    };
-
-    let currentUser = null;
-    let agriculturalData = [];
-    let filteredData = [];
-    let reportsTable = null;
-    let usersTable = null;
-    let logsTable = null;
-    let charts = {};
-    let systemUsers = [
-        { id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null },
-        { id: 2, username: 'dgagro', password: 'dgagro123', role: 'user', lastAccess: null }
-    ];
-    let systemLogs = [];
-
-    // =================================================================================
-    // FUNÇÃO PARA CARREGAR E PROCESSAR DADOS DO GITHUB
-    // =================================================================================
-    async function carregarDadosDoGitHub() {
-        // *** LINHA CORRIGIDA: Verificação agora é genérica e correta ***
-        if (!GITHUB_EXCEL_URL || !GITHUB_EXCEL_URL.startsWith('https://raw.githubusercontent.com')) {
-            showToast('URL do arquivo Excel no GitHub não foi configurada corretamente. Use o formato "Raw".', 'error');
-            console.error("A constante GITHUB_EXCEL_URL não está configurada ou é inválida.");
-            return [];
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Relatórios Agrícolas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --agri-green-primary: #2E7D32;
+            --agri-green-secondary: #4CAF50;
+            --agri-orange-accent: #FF9800;
+            --agri-bg-light: #F1F8E9;
+            --agri-text-dark: #1B5E20;
+            --radius-base: 8px;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
         }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--agri-bg-light);
+            color: var(--agri-text-dark);
+        }
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--agri-green-primary) 0%, var(--agri-green-secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .logo-container i, .logo-container h2 { color: var(--agri-green-primary); }
+        .form-control:focus {
+            border-color: var(--agri-green-primary);
+            box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.25);
+        }
+        .btn-success {
+            background-color: var(--agri-green-primary);
+            border-color: var(--agri-green-primary);
+            padding: 12px;
+            border-radius: var(--radius-base);
+        }
+        .btn-success:hover {
+            background-color: var(--agri-green-secondary);
+            border-color: var(--agri-green-secondary);
+        }
+        .card {
+            border: none;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+        }
+        .table thead th {
+            border-bottom: 2px solid var(--agri-green-primary);
+            color: var(--agri-text-dark);
+            background-color: #f8f9fa;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--agri-green-primary) !important;
+            border-color: var(--agri-green-primary) !important;
+            color: white !important;
+        }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
+        }
+        .summary-card {
+            border: none; box-shadow: var(--shadow-sm); transition: transform 0.2s ease; color: white;
+        }
+        .summary-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .summary-card-toneladas { background: linear-gradient(135deg, #4CAF50, #45a049); }
+        .summary-card-distancia { background: linear-gradient(135deg, #2196F3, #1976d2); }
+        .summary-card-impureza { background: linear-gradient(135deg, #FF9800, #f57c00); }
+        .summary-card-atr { background: linear-gradient(135deg, #9C27B0, #7b1fa2); }
+        .summary-card h3 { font-size: 1.75rem; }
+    </style>
+</head>
+<body>
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="logo-container text-center mb-4">
+                <i class="fas fa-seedling fa-3x"></i>
+                <h2 class="mt-3">Relatórios Agrícolas</h2>
+                <p class="text-muted">Sistema de Gestão de Dados</p>
+            </div>
+            <form id="loginForm">
+                <div class="mb-3"><label for="username" class="form-label">Usuário</label><div class="input-group"><span class="input-group-text"><i class="fas fa-user"></i></span><input type="text" class="form-control" id="username" placeholder="Digite seu usuário" required></div></div>
+                <div class="mb-3"><label for="password" class="form-label">Senha</label><div class="input-group"><span class="input-group-text"><i class="fas fa-lock"></i></span><input type="password" class="form-control" id="password" placeholder="Digite sua senha" required></div></div>
+                <div class="d-grid"><button type="submit" class="btn btn-success btn-lg">Entrar</button></div>
+            </form>
+        </div>
+    </div>
 
-        showLoading();
-        try {
-            const response = await fetch(GITHUB_EXCEL_URL);
-            if (!response.ok) {
-                throw new Error(`Erro de rede ao buscar arquivo: ${response.statusText}`);
+    <div id="mainApp" class="d-none">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-success"><div class="container-fluid"><a class="navbar-brand" href="#"><i class="fas fa-seedling me-2"></i> Relatórios Agrícolas</a><button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link active" href="#" onclick="showSection('dashboard')">Dashboard</a></li><li class="nav-item"><a class="nav-link" href="#" onclick="showSection('reports')">Relatórios</a></li><li class="nav-item" id="adminMenu" style="display: none;"><a class="nav-link" href="#" onclick="showSection('admin')">Administração</a></li></ul><ul class="navbar-nav"><li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"><i class="fas fa-user"></i> <span id="currentUser"></span></a><ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="#" onclick="logout()">Sair</a></li></ul></li></ul></div></div></nav>
+
+        <main id="dashboardSection" class="container-fluid py-4">
+            <h2 class="mb-4">Dashboard</h2>
+            <div class="row mb-4"><div class="col-md-3 mb-3"><div class="card text-white bg-primary h-100"><div class="card-body"><div class="d-flex justify-content-between"><div><h5 class="card-title">📦 Toneladas 2025</h5><h3 id="totalCana">Sem dados</h3></div><i class="fas fa-weight-hanging fa-2x opacity-75"></i></div></div></div></div><div class="col-md-3 mb-3"><div class="card text-white bg-success h-100"><div class="card-body"><div class="d-flex justify-content-between"><div><h5 class="card-title">🍯 ATR Médio 2025</h5><h3 id="atrMedio">Sem dados</h3></div><i class="fas fa-chart-line fa-2x opacity-75"></i></div></div></div></div><div class="col-md-3 mb-3"><div class="card text-white bg-warning h-100"><div class="card-body"><div class="d-flex justify-content-between"><div><h5 class="card-title">📍 Dist. Média 2025</h5><h3 id="distMedia">Sem dados</h3></div><i class="fas fa-route fa-2x opacity-75"></i></div></div></div></div><div class="col-md-3 mb-3"><div class="card text-white bg-danger h-100"><div class="card-body"><div class="d-flex justify-content-between"><div><h5 class="card-title">⚠️ Impureza Média 2025</h5><h3 id="impurezaMedia">Sem dados</h3></div><i class="fas fa-exclamation-triangle fa-2x opacity-75"></i></div></div></div></div></div>
+            <div class="row"><div class="col-md-6 mb-4"><div class="card"><div class="card-header"><h5 class="mb-0">Participação por Unidade</h5></div><div class="card-body"><div class="text-center py-4"><i class="fas fa-chart-pie fa-3x text-muted mb-3"></i><p class="text-muted">Buscando dados no GitHub...</p></div><canvas id="unidadeChart" class="d-none" height="200"></canvas></div></div></div><div class="col-md-6 mb-4"><div class="card"><div class="card-header"><h5 class="mb-0">Participação por Frente</h5></div><div class="card-body"><div class="text-center py-4"><i class="fas fa-chart-bar fa-3x text-muted mb-3"></i><p class="text-muted">Buscando dados no GitHub...</p></div><canvas id="frenteChart" class="d-none" height="200"></canvas></div></div></div></div>
+        </main>
+
+        <main id="reportsSection" class="container-fluid py-4 d-none">
+            <h2 class="mb-4">Relatórios</h2>
+            <div class="card mb-4"><div class="card-header"><h5 class="mb-0">Filtros</h5></div><div class="card-body"><div class="row g-3 align-items-end"><div class="col-md-2"><label class="form-label">Data Início</label><input type="date" class="form-control" id="dataInicio"></div><div class="col-md-2"><label class="form-label">Data Fim</label><input type="date" class="form-control" id="dataFim"></div><div class="col-md-2"><label class="form-label">Unidade</label><select class="form-control" id="filtroUnidade"><option value="">Todas</option><option value="COPI">COPI</option><option value="RAF">RAF</option><option value="IASF">IASF</option></select></div><div class="col-md-2"><label class="form-label">Frente</label><select class="form-control" id="filtroFrente"><option value="">Todas</option><option value="92">92 - MEC</option><option value="94">94 - MAN</option><option value="135">135 - MEC</option></select></div><div class="col-md-2"><label class="form-label">Fazenda</label><input type="text" class="form-control" id="filtroFazenda" placeholder="Código"></div><div class="col-md-2"><label class="form-label">Zona</label><input type="number" class="form-control" id="filtroZona" placeholder="Número"></div></div><div class="mt-3"><button class="btn btn-primary" id="btnAplicarFiltros" onclick="aplicarFiltros()" disabled>Aplicar</button><button class="btn btn-secondary" id="btnLimparFiltros" onclick="limparFiltros()" disabled>Limpar</button><button class="btn btn-success" id="btnExportarExcel" onclick="exportarExcel()" disabled>Exportar Excel</button><button class="btn btn-danger" id="btnExportarPDF" onclick="exportarPDF()" disabled>Exportar PDF</button><small class="text-muted d-block mt-2" id="msgSemDados">Carregue uma planilha para habilitar filtros e exportação.</small></div></div></div>
+            <div class="row mb-4" id="summaryCards" style="display: none;"><div class="col-md-3 mb-3"><div class="card summary-card summary-card-toneladas h-100"><div class="card-body"><div><h6 class="card-title">📦 Total Toneladas</h6><h3 id="summaryToneladas">0 t</h3></div></div></div></div><div class="col-md-3 mb-3"><div class="card summary-card summary-card-distancia h-100"><div class="card-body"><div><h6 class="card-title">📍 Média Distância</h6><h3 id="summaryDistancia">0 km</h3></div></div></div></div><div class="col-md-3 mb-3"><div class="card summary-card summary-card-impureza h-100"><div class="card-body"><div><h6 class="card-title">⚠️ Média Impureza</h6><h3 id="summaryImpureza">0%</h3></div></div></div></div><div class="col-md-3 mb-3"><div class="card summary-card summary-card-atr h-100"><div class="card-body"><div><h6 class="card-title">🍯 Média ATR</h6><h3 id="summaryATR">0 kg/t</h3></div></div></div></div></div>
+            <div class="card"><div class="card-header"><h5 class="mb-0">Resultados</h5></div><div class="card-body"><div class="table-responsive"><table id="reportsTable" class="table table-striped table-hover w-100"><thead><tr><th>Unidade</th><th>Frente</th><th>Fazenda</th><th>Zona</th><th>Talhão</th><th>TC (t)</th><th>% Part.</th><th>Dist.Méd (km)</th><th>ATR (kg/t)</th><th>IMP Min (%)</th></tr></thead>
+            <tbody></tbody>
+            </table></div></div></div>
+        </main>
+        
+        <main id="adminSection" class="container-fluid py-4 d-none">
+            <h2 class="mb-4">Painel Administrativo</h2>
+             <div class="row mb-4">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header"><h5 class="mb-0">Estatísticas</h5></div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6"><h3><i class="fas fa-users text-primary"></i> <span id="totalUsuarios">0</span></h3><p class="text-muted">Usuários</p></div>
+                                <div class="col-6"><h3><i class="fas fa-file-alt text-success"></i> <span id="totalRegistros">0</span></h3><p class="text-muted">Registros</p></div>
+                            </div>
+                            <hr>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Os dados da planilha agora são lidos diretamente do GitHub. Para atualizar, envie um novo arquivo para o repositório.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                     <div class="card"><div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Gerenciar Usuários</h5><button class="btn btn-primary" onclick="showUserModal()"><i class="fas fa-plus"></i> Novo Usuário</button></div><div class="card-body"><div class="table-responsive"><table id="usersTable" class="table table-striped w-100"><thead><tr><th>Usuário</th><th>Perfil</th><th>Último Acesso</th><th>Ações</th></tr></thead><tbody></tbody></table></div></div></div>
+                </div>
+            </div>
+            <div class="row"><div class="col-12"><div class="card"><div class="card-header"><h5 class="mb-0">Logs de Atividade</h5></div><div class="card-body"><div class="table-responsive"><table id="logsTable" class="table table-striped table-sm w-100"><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead><tbody></tbody></table></div></div></div></div></div>
+        </main>
+    </div>
+
+    <div class="modal fade" id="userModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="userModalTitle">Novo Usuário</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="userForm"><div class="mb-3"><label class="form-label">Usuário</label><input type="text" class="form-control" id="modalUsername" required></div><div class="mb-3"><label class="form-label">Senha</label><input type="password" class="form-control" id="modalPassword" required><small class="form-text text-muted">Deixe em branco para não alterar a senha existente.</small></div><div class="mb-3"><label class="form-label">Perfil</label><select class="form-control" id="modalRole" required><option value="user">Usuário de Consulta</option><option value="admin">Administrador</option></select></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="saveUser()">Salvar</button></div></div></div></div>
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+    <div id="loadingOverlay" class="loading-overlay d-none"><div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status"><span class="visually-hidden">Carregando...</span></div></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // *** VERIFIQUE SE ESTA É A URL "RAW" MAIS ATUAL DO SEU ARQUIVO NO GITHUB ***
+        const GITHUB_EXCEL_URL = 'https://raw.githubusercontent.com/MaelHXT/painel/e1f7ca86ffd260c809330397b684144952816ac5/dadosdg.xlsx';
+
+        // Configuração do Firebase - MANTIDA PARA GERENCIAR USUÁRIOS E LOGS
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkSZOrfwgnthsUxdOlycLVO5WQF9rUXkw",
+            authDomain: "relatorio-agricola.firebaseapp.com",
+            projectId: "relatorio-agricola",
+            storageBucket: "relatorio-agricola.firebasestorage.app",
+            messagingSenderId: "718423859625",
+            appId: "1:718423859625:web:2549a6bd2dd3ff871a24b8"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Sistema de Relatórios Agrícolas
+        const SYSTEM_CONFIG = {
+            unidades: { 40: 'COPI', 52: 'RAF', 60: 'IASF' },
+            frentes: { '92': 'MEC', '94': 'MAN', '135': 'MEC' },
+        };
+
+        let currentUser = null;
+        let agriculturalData = [];
+        let filteredData = [];
+        let reportsTable = null;
+        let usersTable = null;
+        let logsTable = null;
+        let charts = {};
+        let systemUsers = [
+            { id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null },
+            { id: 2, username: 'dgagro', password: 'dgagro123', role: 'user', lastAccess: null }
+        ];
+        let systemLogs = [];
+
+        // =================================================================================
+        // FUNÇÃO PARA CARREGAR E PROCESSAR DADOS DO GITHUB
+        // =================================================================================
+        async function carregarDadosDoGitHub() {
+            // Verificação genérica para garantir que a URL é do tipo 'raw'
+            if (!GITHUB_EXCEL_URL || !GITHUB_EXCEL_URL.startsWith('https://raw.githubusercontent.com')) {
+                showToast('URL do arquivo Excel no GitHub não foi configurada corretamente. Use o formato "Raw".', 'error');
+                console.error("A constante GITHUB_EXCEL_URL não está configurada ou é inválida.");
+                return [];
             }
-            const arrayBuffer = await response.arrayBuffer();
-            const workbook = XLSX.read(arrayBuffer, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-            if (jsonData.length === 0) throw new Error('A planilha do GitHub está vazia.');
-
-            const processedData = jsonData.map((row) => {
-                const required = ['Unidade', 'Data', 'Entrada de Cana (t)', 'Frente'];
-                if (required.some(col => !row.hasOwnProperty(col))) {
-                    console.warn('Linha ignorada por não ter todas as colunas obrigatórias:', row);
-                    return null;
+            showLoading();
+            try {
+                const response = await fetch(GITHUB_EXCEL_URL);
+                if (!response.ok) {
+                    throw new Error(`Erro de rede ao buscar arquivo: ${response.statusText}`);
                 }
-                
-                return {
-                    codFrente: String(row['Frente'] || ''),
-                    unidade: row['Unidade'], 
-                    data: formatExcelDate(row['Data']), 
-                    descricaoFrente: row['Descrição Frente'] || '',
-                    codFazenda: String(row['Cód. Fazenda'] || ''), 
-                    zona: parseInt(row['Zona']) || 0, 
-                    talhao: parseInt(row['Talhão']) || 0,
-                    entradaCana: parseFloat(row['Entrada de Cana (t)']) || 0, 
-                    atr: parseFloat(row['ATR (kg/t)']) || 0,
-                    raioMedio: parseFloat(row['Raio Médio (km)']) || 0, 
-                    impurezaMineral: parseFloat(row['Impureza Mineral']) || 0
-                };
-            }).filter(item => item && item.unidade && item.entradaCana > 0);
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: "array" });
+                const sheetName = workbook.SheetNames[0];
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-            if (processedData.length === 0) throw new Error('Nenhum registro válido encontrado. Verifique se as colunas obrigatórias (Unidade, Data, Frente, Entrada de Cana (t)) existem e estão preenchidas na planilha.');
-            
-            showToast(`Sucesso! ${processedData.length} registros carregados do GitHub.`, 'success');
-            return processedData;
+                if (jsonData.length === 0) throw new Error('A planilha do GitHub está vazia.');
 
-        } catch (error) {
-            console.error('Erro ao carregar ou processar dados do GitHub:', error);
-            showToast(`Falha ao carregar dados do GitHub: ${error.message}`, 'error');
-            return []; 
-        } finally {
-            hideLoading();
-        }
-    }
-
-    // Funções de gerenciamento de usuários e logs (mantidas com Firebase)
-    async function salvarUsuariosFirebase(usuarios) { try { await db.collection('configuracao').doc('usuarios').set({ usuarios }); } catch (e) { console.error(e); } }
-    async function carregarUsuariosFirebase() { try { const doc = await db.collection('configuracao').doc('usuarios').get(); if (doc.exists && doc.data().usuarios.length > 0) { return doc.data().usuarios; } await salvarUsuariosFirebase(systemUsers); return systemUsers; } catch (e) { console.error(e); return systemUsers; } }
-    async function salvarLogsFirebase(logs) { try { await db.collection('configuracao').doc('logs').set({ logs: logs.slice(0, 100) }); } catch (e) { console.error(e); } }
-    async function carregarLogsFirebase() { try { const doc = await db.collection('configuracao').doc('logs').get(); return doc.exists ? doc.data().logs || [] : []; } catch (e) { console.error(e); return []; } }
-
-    function showLoading() { document.getElementById('loadingOverlay').classList.remove('d-none'); }
-    function hideLoading() { document.getElementById('loadingOverlay').classList.add('d-none'); }
-
-    function showToast(message, type = 'info') {
-        const toastContainer = document.getElementById('toastContainer');
-        const toastType = type === 'error' ? 'danger' : type;
-        const toastHTML = `<div class="toast align-items-center text-white bg-${toastType} border-0" role="alert"><div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
-        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-        const newToast = toastContainer.lastElementChild;
-        new bootstrap.Toast(newToast).show();
-        newToast.addEventListener('hidden.bs.toast', () => newToast.remove());
-    }
-
-    async function logActivity(action, details = '') {
-        const logEntry = { timestamp: new Date().toISOString(), user: currentUser?.username || 'Sistema', action, details };
-        systemLogs.unshift(logEntry);
-        await salvarLogsFirebase(systemLogs);
-    }
-
-    function formatDateTime(dateString) { return new Date(dateString).toLocaleString('pt-BR'); }
-    function formatNumber(num, decimals = 1) { return Number(num).toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }); }
-
-    async function initializeApp() {
-        [systemUsers, systemLogs] = await Promise.all([carregarUsuariosFirebase(), carregarLogsFirebase()]);
-        document.getElementById('loginForm').addEventListener('submit', handleLogin);
-        showLoginScreen();
-        logActivity('Sistema iniciado');
-    }
-
-    function handleLogin(e) {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const user = systemUsers.find(u => u.username === username && u.password === password);
-        if (user) {
-            currentUser = user;
-            user.lastAccess = new Date().toISOString();
-            logActivity('Login realizado', `Usuário: ${username}`);
-            showToast('Login realizado com sucesso! Carregando dados do GitHub...', 'success');
-            showMainApp();
-        } else {
-            showToast('Usuário ou senha incorretos.', 'error');
-        }
-    }
-    
-    async function showMainApp() {
-        document.getElementById('loginScreen').classList.add('d-none');
-        document.getElementById('mainApp').classList.remove('d-none');
-        document.getElementById('currentUser').textContent = currentUser.username;
-        document.getElementById('adminMenu').style.display = currentUser.role === 'admin' ? 'block' : 'none';
-        
-        agriculturalData = await carregarDadosDoGitHub();
-
-        showSection('dashboard');
-    }
-
-    function logout() {
-        logActivity('Logout realizado');
-        currentUser = null;
-        agriculturalData = []; 
-        showLoginScreen();
-    }
-
-    function showLoginScreen() {
-        document.getElementById('loginScreen').classList.remove('d-none');
-        document.getElementById('mainApp').classList.add('d-none');
-        document.getElementById('loginForm').reset();
-    }
-
-    function showSection(sectionId) {
-        ['dashboardSection', 'reportsSection', 'adminSection'].forEach(s => document.getElementById(s).classList.add('d-none'));
-        document.getElementById(sectionId + 'Section').classList.remove('d-none');
-        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        document.querySelector(`.nav-link[onclick="showSection('${sectionId}')"]`).classList.add('active');
-        
-        switch (sectionId) {
-            case 'dashboard': loadDashboard(); break;
-            case 'reports': loadReports(); break;
-            case 'admin':
-                if (currentUser.role === 'admin') loadAdmin();
-                else { showToast('Acesso negado.', 'error'); showSection('dashboard'); }
-                break;
-        }
-    }
-    
-    function loadDashboard() {
-        const data2025 = agriculturalData.filter(item => item.data && new Date(item.data).getUTCFullYear() === 2025);
-        if (data2025.length === 0) {
-            document.getElementById('totalCana').textContent = 'Sem dados';
-            document.getElementById('atrMedio').textContent = 'Sem dados';
-            document.getElementById('distMedia').textContent = 'Sem dados';
-            document.getElementById('impurezaMedia').textContent = 'Sem dados';
-        } else {
-            const totalCana = data2025.reduce((sum, item) => sum + item.entradaCana, 0);
-            document.getElementById('totalCana').textContent = formatNumber(totalCana, 1) + ' t';
-            document.getElementById('atrMedio').textContent = formatNumber(totalCana > 0 ? data2025.reduce((sum, item) => sum + (item.atr * item.entradaCana), 0) / totalCana : 0, 1) + ' kg/t';
-            document.getElementById('distMedia').textContent = formatNumber(data2025.length > 0 ? data2025.reduce((sum, item) => sum + item.raioMedio, 0) / data2025.length : 0, 1) + ' km';
-            document.getElementById('impurezaMedia').textContent = formatNumber(data2025.length > 0 ? data2025.reduce((sum, item) => sum + item.impurezaMineral, 0) / data2025.length : 0, 1) + '%';
-        }
-
-        const hasData = data2025.length > 0;
-        document.getElementById('unidadeChart').classList.toggle('d-none', !hasData);
-        document.getElementById('frenteChart').classList.toggle('d-none', !hasData);
-        document.querySelectorAll('#dashboardSection .card-body .text-center').forEach(el => el.style.display = hasData ? 'none' : 'block');
-
-        if(hasData) {
-            createChart('unidadeChart', 'doughnut', data2025.reduce((acc, item) => { acc[item.unidade] = (acc[item.unidade] || 0) + item.entradaCana; return acc; }, {}));
-            createChart('frenteChart', 'bar', data2025.reduce((acc, item) => {
-                if (item.codFrente) {
-                    const frenteCode = item.codFrente;
-                    const frenteLabel = `${frenteCode} - ${SYSTEM_CONFIG.frentes[frenteCode] || 'N/A'}`;
-                    acc[frenteLabel] = (acc[frenteLabel] || 0) + item.entradaCana;
-                }
-                return acc;
-            }, {}));
-        }
-    }
-    
-    function createChart(chartId, type, data) {
-        const ctx = document.getElementById(chartId).getContext('2d');
-        if (charts[chartId]) charts[chartId].destroy();
-        const chartData = { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#2E7D32', '#4CAF50', '#FF9800', '#2196F3', '#f44336'], borderWidth: type === 'doughnut' ? 2 : 1 }] };
-        const options = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', position: 'bottom' } }, scales: { y: { beginAtZero: true, display: type === 'bar' } } };
-        charts[chartId] = new Chart(ctx, { type, data: chartData, options });
-    }
-
-    function loadReports() {
-        initializeReportsTable();
-        aplicarFiltros(true);
-        updateReportButtons();
-    }
-
-    function initializeReportsTable() {
-        if ($.fn.DataTable.isDataTable('#reportsTable')) return;
-        reportsTable = $('#reportsTable').DataTable({
-            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json', emptyTable: '<div class="text-center py-4 text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><br>Nenhum dado disponível. Verifique o arquivo no GitHub.</div>' },
-            pageLength: 25,
-            responsive: true,
-            order: [[2, 'asc'], [3, 'asc'], [4, 'asc']],
-            columnDefs: [ { targets: [5, 6, 7, 8, 9], className: 'text-end' } ]
-        });
-    }
-    
-    function aplicarFiltros(isInitialLoad = false) {
-        if (agriculturalData.length === 0) {
-            filteredData = [];
-        } else {
-            const filters = {
-                dataInicio: document.getElementById('dataInicio').value, dataFim: document.getElementById('dataFim').value,
-                unidade: document.getElementById('filtroUnidade').value, frente: document.getElementById('filtroFrente').value,
-                fazenda: document.getElementById('filtroFazenda').value.toLowerCase(), zona: document.getElementById('filtroZona').value
-            };
-            filteredData = agriculturalData.filter(item => 
-                (!filters.dataInicio || item.data >= filters.dataInicio) && 
-                (!filters.dataFim || item.data <= filters.dataFim) &&
-                (!filters.unidade || item.unidade === filters.unidade) && 
-                (!filters.frente || item.codFrente === filters.frente) &&
-                (!filters.fazenda || String(item.codFazenda).toLowerCase().includes(filters.fazenda)) && 
-                (!filters.zona || item.zona == filters.zona)
-            );
-            if (!isInitialLoad) showToast(`${filteredData.length} registros encontrados.`, 'success');
-        }
-        updateReportsTable();
-        updateSummaryCards();
-    }
-
-    function limparFiltros() {
-        if (agriculturalData.length === 0) return;
-        ['dataInicio', 'dataFim', 'filtroUnidade', 'filtroFrente', 'filtroFazenda', 'filtroZona'].forEach(id => document.getElementById(id).value = '');
-        aplicarFiltros(true);
-        showToast('Filtros limpos.', 'info');
-    }
-
-    function updateReportButtons() {
-        const hasData = agriculturalData.length > 0;
-        ['btnAplicarFiltros', 'btnLimparFiltros', 'btnExportarExcel', 'btnExportarPDF'].forEach(id => document.getElementById(id).disabled = !hasData);
-        document.getElementById('msgSemDados').style.display = hasData ? 'none' : 'block';
-    }
-
-    function updateSummaryCards() {
-        document.getElementById('summaryCards').style.display = agriculturalData.length === 0 ? 'none' : 'flex';
-        if (filteredData.length === 0) {
-            document.getElementById('summaryToneladas').textContent = '0 t'; document.getElementById('summaryDistancia').textContent = '0 km';
-            document.getElementById('summaryImpureza').textContent = '0%'; document.getElementById('summaryATR').textContent = '0 kg/t'; return;
-        }
-        const totalToneladas = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
-        document.getElementById('summaryToneladas').textContent = formatNumber(totalToneladas, 1) + ' t';
-        document.getElementById('summaryDistancia').textContent = formatNumber(filteredData.length > 0 ? filteredData.reduce((sum, item) => sum + item.raioMedio, 0) / filteredData.length : 0, 1) + ' km';
-        document.getElementById('summaryImpureza').textContent = formatNumber(filteredData.length > 0 ? filteredData.reduce((sum, item) => sum + item.impurezaMineral, 0) / filteredData.length : 0, 1) + '%';
-        document.getElementById('summaryATR').textContent = formatNumber(totalToneladas > 0 ? filteredData.reduce((sum, item) => sum + (item.atr * item.entradaCana), 0) / totalToneladas : 0, 1) + ' kg/t';
-    }
-
-    function updateReportsTable() {
-        if (!reportsTable) return;
-        reportsTable.clear();
-        if (filteredData.length > 0) {
-            const totalCana = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
-            const groupedData = filteredData.reduce((acc, item) => {
-                const key = `${item.codFazenda}-${item.zona}-${item.talhao}`;
-                if (!acc[key]) {
-                    acc[key] = {
-                        unidade: item.unidade, codFazenda: item.codFazenda, zona: item.zona, talhao: item.talhao,
-                        entradaCana: 0, atrSum: 0, raioMedioSum: 0, impurezaMineralSum: 0, count: 0, frentes: new Set()
+                const processedData = jsonData.map((row) => {
+                    const required = ['Unidade', 'Data', 'Entrada de Cana (t)', 'Frente'];
+                    if (required.some(col => !row.hasOwnProperty(col))) {
+                        console.warn('Linha ignorada por não ter todas as colunas obrigatórias:', row);
+                        return null;
+                    }
+                    
+                    return {
+                        codFrente: String(row['Frente'] || ''),
+                        unidade: row['Unidade'], 
+                        data: formatExcelDate(row['Data']), 
+                        descricaoFrente: row['Descrição Frente'] || '',
+                        codFazenda: String(row['Cód. Fazenda'] || ''), 
+                        zona: parseInt(row['Zona']) || 0, 
+                        talhao: parseInt(row['Talhão']) || 0,
+                        entradaCana: parseFloat(row['Entrada de Cana (t)']) || 0, 
+                        atr: parseFloat(row['ATR (kg/t)']) || 0,
+                        raioMedio: parseFloat(row['Raio Médio (km)']) || 0, 
+                        impurezaMineral: parseFloat(row['Impureza Mineral']) || 0
                     };
-                }
-                const group = acc[key];
-                group.entradaCana += item.entradaCana;
-                group.atrSum += item.atr * item.entradaCana;
-                group.raioMedioSum += item.raioMedio * item.entradaCana;
-                group.impurezaMineralSum += item.impurezaMineral * item.entradaCana;
-                if (item.codFrente) {
-                    group.frentes.add(item.codFrente);
-                }
-                return acc;
-            }, {});
+                }).filter(item => item && item.unidade && item.entradaCana > 0);
+
+                if (processedData.length === 0) throw new Error('Nenhum registro válido encontrado. Verifique se as colunas obrigatórias (Unidade, Data, Frente, Entrada de Cana (t)) existem e estão preenchidas na planilha.');
+                
+                showToast(`Sucesso! ${processedData.length} registros carregados do GitHub.`, 'success');
+                return processedData;
+
+            } catch (error) {
+                console.error('Erro ao carregar ou processar dados do GitHub:', error);
+                showToast(`Falha ao carregar dados do GitHub: ${error.message}`, 'error');
+                return []; 
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Funções de gerenciamento de usuários e logs (mantidas com Firebase)
+        async function salvarUsuariosFirebase(usuarios) { try { await db.collection('configuracao').doc('usuarios').set({ usuarios }); } catch (e) { console.error(e); } }
+        async function carregarUsuariosFirebase() { try { const doc = await db.collection('configuracao').doc('usuarios').get(); if (doc.exists && doc.data().usuarios.length > 0) { return doc.data().usuarios; } await salvarUsuariosFirebase(systemUsers); return systemUsers; } catch (e) { console.error(e); return systemUsers; } }
+        async function salvarLogsFirebase(logs) { try { await db.collection('configuracao').doc('logs').set({ logs: logs.slice(0, 100) }); } catch (e) { console.error(e); } }
+        async function carregarLogsFirebase() { try { const doc = await db.collection('configuracao').doc('logs').get(); return doc.exists ? doc.data().logs || [] : []; } catch (e) { console.error(e); return []; } }
+
+        function showLoading() { document.getElementById('loadingOverlay').classList.remove('d-none'); }
+        function hideLoading() { document.getElementById('loadingOverlay').classList.add('d-none'); }
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toastType = type === 'error' ? 'danger' : type;
+            const toastHTML = `<div class="toast align-items-center text-white bg-${toastType} border-0" role="alert"><div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            const newToast = toastContainer.lastElementChild;
+            new bootstrap.Toast(newToast).show();
+            newToast.addEventListener('hidden.bs.toast', () => newToast.remove());
+        }
+
+        async function logActivity(action, details = '') {
+            const logEntry = { timestamp: new Date().toISOString(), user: currentUser?.username || 'Sistema', action, details };
+            systemLogs.unshift(logEntry);
+            await salvarLogsFirebase(systemLogs);
+        }
+
+        function formatDateTime(dateString) { return new Date(dateString).toLocaleString('pt-BR'); }
+        function formatNumber(num, decimals = 1) { return Number(num).toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }); }
+
+        async function initializeApp() {
+            try {
+                [systemUsers, systemLogs] = await Promise.all([carregarUsuariosFirebase(), carregarLogsFirebase()]);
+                document.getElementById('loginForm').addEventListener('submit', handleLogin);
+                showLoginScreen();
+                logActivity('Sistema iniciado');
+            } catch (error) {
+                console.error("Erro fatal na inicialização:", error);
+                document.body.innerHTML = '<div style="padding: 20px; text-align: center; color: red;"><h1>Erro na Inicialização</h1><p>Não foi possível conectar aos serviços necessários. Verifique o console para mais detalhes.</p></div>';
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const user = systemUsers.find(u => u.username === username && u.password === password);
+            if (user) {
+                currentUser = user;
+                user.lastAccess = new Date().toISOString();
+                logActivity('Login realizado', `Usuário: ${username}`);
+                showToast('Login realizado com sucesso! Carregando dados do GitHub...', 'success');
+                showMainApp();
+            } else {
+                showToast('Usuário ou senha incorretos.', 'error');
+            }
+        }
+        
+        async function showMainApp() {
+            document.getElementById('loginScreen').classList.add('d-none');
+            document.getElementById('mainApp').classList.remove('d-none');
+            document.getElementById('currentUser').textContent = currentUser.username;
+            document.getElementById('adminMenu').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+            
+            agriculturalData = await carregarDadosDoGitHub();
+
+            showSection('dashboard');
+        }
+
+        function logout() {
+            logActivity('Logout realizado');
+            currentUser = null;
+            agriculturalData = []; 
+            showLoginScreen();
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('d-none');
+            document.getElementById('mainApp').classList.add('d-none');
+        }
+
+        function showSection(sectionId) {
+            ['dashboardSection', 'reportsSection', 'adminSection'].forEach(s => document.getElementById(s).classList.add('d-none'));
+            document.getElementById(sectionId + 'Section').classList.remove('d-none');
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            document.querySelector(`.nav-link[onclick="showSection('${sectionId}')"]`).classList.add('active');
+            
+            switch (sectionId) {
+                case 'dashboard': loadDashboard(); break;
+                case 'reports': loadReports(); break;
+                case 'admin':
+                    if (currentUser.role === 'admin') loadAdmin();
+                    else { showToast('Acesso negado.', 'error'); showSection('dashboard'); }
+                    break;
+            }
+        }
+        
+        function loadDashboard() {
+            const data2025 = agriculturalData.filter(item => item.data && new Date(item.data).getUTCFullYear() === 2025);
+            if (data2025.length === 0) {
+                document.getElementById('totalCana').textContent = 'Sem dados';
+                document.getElementById('atrMedio').textContent = 'Sem dados';
+                document.getElementById('distMedia').textContent = 'Sem dados';
+                document.getElementById('impurezaMedia').textContent = 'Sem dados';
+            } else {
+                const totalCana = data2025.reduce((sum, item) => sum + item.entradaCana, 0);
+                document.getElementById('totalCana').textContent = formatNumber(totalCana, 1) + ' t';
+                document.getElementById('atrMedio').textContent = formatNumber(totalCana > 0 ? data2025.reduce((sum, item) => sum + (item.atr * item.entradaCana), 0) / totalCana : 0, 1) + ' kg/t';
+                document.getElementById('distMedia').textContent = formatNumber(data2025.length > 0 ? data2025.reduce((sum, item) => sum + item.raioMedio, 0) / data2025.length : 0, 1) + ' km';
+                document.getElementById('impurezaMedia').textContent = formatNumber(data2025.length > 0 ? data2025.reduce((sum, item) => sum + item.impurezaMineral, 0) / data2025.length : 0, 1) + '%';
+            }
+
+            const hasData = data2025.length > 0;
+            document.getElementById('unidadeChart').classList.toggle('d-none', !hasData);
+            document.getElementById('frenteChart').classList.toggle('d-none', !hasData);
+            document.querySelectorAll('#dashboardSection .card-body .text-center').forEach(el => el.style.display = hasData ? 'none' : 'block');
+
+            if(hasData) {
+                createChart('unidadeChart', 'doughnut', data2025.reduce((acc, item) => { acc[item.unidade] = (acc[item.unidade] || 0) + item.entradaCana; return acc; }, {}));
+                createChart('frenteChart', 'bar', data2025.reduce((acc, item) => {
+                    if (item.codFrente) {
+                        const frenteCode = item.codFrente;
+                        const frenteLabel = `${frenteCode} - ${SYSTEM_CONFIG.frentes[frenteCode] || 'N/A'}`;
+                        acc[frenteLabel] = (acc[frenteLabel] || 0) + item.entradaCana;
+                    }
+                    return acc;
+                }, {}));
+            }
+        }
+        
+        function createChart(chartId, type, data) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            if (charts[chartId]) charts[chartId].destroy();
+            const chartData = { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#2E7D32', '#4CAF50', '#FF9800', '#2196F3', '#f44336'], borderWidth: type === 'doughnut' ? 2 : 1 }] };
+            const options = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', position: 'bottom' } }, scales: { y: { beginAtZero: true, display: type === 'bar' } } };
+            charts[chartId] = new Chart(ctx, { type, data: chartData, options });
+        }
+
+        function loadReports() {
+            initializeReportsTable();
+            aplicarFiltros(true);
+            updateReportButtons();
+        }
+
+        function initializeReportsTable() {
+            if ($.fn.DataTable.isDataTable('#reportsTable')) return;
+            reportsTable = $('#reportsTable').DataTable({
+                language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json', emptyTable: '<div class="text-center py-4 text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><br>Nenhum dado disponível. Verifique o arquivo no GitHub.</div>' },
+                pageLength: 25,
+                responsive: true,
+                order: [[2, 'asc'], [3, 'asc'], [4, 'asc']],
+                columnDefs: [ { targets: [5, 6, 7, 8, 9], className: 'text-end' } ]
+            });
+        }
+        
+        function aplicarFiltros(isInitialLoad = false) {
+            if (agriculturalData.length === 0) {
+                filteredData = [];
+            } else {
+                const filters = {
+                    dataInicio: document.getElementById('dataInicio').value, dataFim: document.getElementById('dataFim').value,
+                    unidade: document.getElementById('filtroUnidade').value, frente: document.getElementById('filtroFrente').value,
+                    fazenda: document.getElementById('filtroFazenda').value.toLowerCase(), zona: document.getElementById('filtroZona').value
+                };
+                filteredData = agriculturalData.filter(item => 
+                    (!filters.dataInicio || item.data >= filters.dataInicio) && 
+                    (!filters.dataFim || item.data <= filters.dataFim) &&
+                    (!filters.unidade || item.unidade === filters.unidade) && 
+                    (!filters.frente || item.codFrente === filters.frente) &&
+                    (!filters.fazenda || String(item.codFazenda).toLowerCase().includes(filters.fazenda)) && 
+                    (!filters.zona || item.zona == filters.zona)
+                );
+                if (!isInitialLoad) showToast(`${filteredData.length} registros encontrados.`, 'success');
+            }
+            updateReportsTable();
+            updateSummaryCards();
+        }
+
+        function limparFiltros() {
+            if (agriculturalData.length === 0) return;
+            ['dataInicio', 'dataFim', 'filtroUnidade', 'filtroFrente', 'filtroFazenda', 'filtroZona'].forEach(id => document.getElementById(id).value = '');
+            aplicarFiltros(true);
+            showToast('Filtros limpos.', 'info');
+        }
+
+        function updateReportButtons() {
+            const hasData = agriculturalData.length > 0;
+            ['btnAplicarFiltros', 'btnLimparFiltros', 'btnExportarExcel', 'btnExportarPDF'].forEach(id => document.getElementById(id).disabled = !hasData);
+            document.getElementById('msgSemDados').style.display = hasData ? 'none' : 'block';
+        }
+
+        function updateSummaryCards() {
+            document.getElementById('summaryCards').style.display = agriculturalData.length === 0 ? 'none' : 'flex';
+            if (filteredData.length === 0) {
+                document.getElementById('summaryToneladas').textContent = '0 t'; document.getElementById('summaryDistancia').textContent = '0 km';
+                document.getElementById('summaryImpureza').textContent = '0%'; document.getElementById('summaryATR').textContent = '0 kg/t'; return;
+            }
+            const totalToneladas = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
+            document.getElementById('summaryToneladas').textContent = formatNumber(totalCana, 1) + ' t';
+            document.getElementById('summaryDistancia').textContent = formatNumber(filteredData.length > 0 ? filteredData.reduce((sum, item) => sum + item.raioMedio, 0) / filteredData.length : 0, 1) + ' km';
+            document.getElementById('summaryImpureza').textContent = formatNumber(filteredData.length > 0 ? filteredData.reduce((sum, item) => sum + item.impurezaMineral, 0) / filteredData.length : 0, 1) + '%';
+            document.getElementById('summaryATR').textContent = formatNumber(totalToneladas > 0 ? filteredData.reduce((sum, item) => sum + (item.atr * item.entradaCana), 0) / totalToneladas : 0, 1) + ' kg/t';
+        }
+
+        function updateReportsTable() {
+            if (!reportsTable) return;
+            reportsTable.clear();
+            if (filteredData.length > 0) {
+                const totalCana = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
+                const groupedData = filteredData.reduce((acc, item) => {
+                    const key = `${item.codFazenda}-${item.zona}-${item.talhao}`;
+                    if (!acc[key]) {
+                        acc[key] = {
+                            unidade: item.unidade, codFazenda: item.codFazenda, zona: item.zona, talhao: item.talhao,
+                            entradaCana: 0, atrSum: 0, raioMedioSum: 0, impurezaMineralSum: 0, count: 0, frentes: new Set()
+                        };
+                    }
+                    const group = acc[key];
+                    group.entradaCana += item.entradaCana;
+                    group.atrSum += item.atr * item.entradaCana;
+                    group.raioMedioSum += item.raioMedio * item.entradaCana;
+                    group.impurezaMineralSum += item.impurezaMineral * item.entradaCana;
+                    if (item.codFrente) {
+                        group.frentes.add(item.codFrente);
+                    }
+                    return acc;
+                }, {});
             
             Object.values(groupedData).forEach(group => {
                 const frenteDesc = [...group.frentes].map(f => `${f}-${SYSTEM_CONFIG.frentes[f] || ''}`).join(', ');
@@ -360,10 +532,10 @@
         if (typeof excelDate === 'string') {
             const parts = excelDate.split(/[/.-]/);
             if (parts.length === 3) {
+                const day = parts[0];
+                const month = parts[1];
                 const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
-                const month = parts[1].padStart(2, '0');
-                const day = parts[0].padStart(2, '0');
-                const date = new Date(`${year}-${month}-${day}`);
+                const date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
                 if (!isNaN(date)) return date.toISOString().slice(0, 10);
             }
         }
