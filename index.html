@@ -155,13 +155,13 @@
         
         <main id="adminSection" class="container-fluid py-4 d-none">
             <h2 class="mb-4">Painel Administrativo</h2>
-            <div class="row mb-4"><div class="col-md-6 mb-4"><div class="card"><div class="card-header"><h5 class="mb-0">Upload de Planilha</h5></div><div class="card-body"><div class="upload-area" id="uploadArea"><i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i><h5>Carregue sua planilha Excel</h5><p class="text-muted">O sistema substituirá os dados existentes.</p><small class="text-muted d-block">Formatos: .xlsx, .xls</small><input type="file" id="excelFile" accept=".xlsx,.xls" class="d-none"></div><div id="uploadProgress" class="d-none"><div class="progress mb-3" style="height: 8px;"><div class="progress-bar" role="progressbar" style="width: 0%"></div></div><p id="uploadStatus">Processando...</p></div></div></div></div><div class="col-md-6 mb-4"><div class="card"><div class="card-header"><h5 class="mb-0">Estatísticas</h5></div><div class="card-body"><div class="row text-center"><div class="col-6"><h3><i class="fas fa-users text-primary"></i> <span id="totalUsuarios">1</span></h3><p class="text-muted">Usuários</p></div><div class="col-6"><h3><i class="fas fa-file-alt text-success"></i> <span id="totalRegistros">0</span></h3><p class="text-muted">Registros</p></div></div></div></div></div></div>
+            <div class="row mb-4"><div class="col-md-6 mb-4"><div class="card"><div class="card-header"><h5 class="mb-0">Upload de Planilha</h5></div><div class="card-body"><div class="upload-area" id="uploadArea"><i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i><h5>Carregue sua planilha Excel</h5><p class="text-muted">O sistema substituirá os dados existentes.</p><small class="text-muted d-block">Formatos: .xlsx, .xls</small><input type="file" id="excelFile" accept=".xlsx,.xls" class="d-none"></div><div id="uploadProgress" class="d-none"><div class="progress mb-3" style="height: 8px;"><div class="progress-bar" role="progressbar" style="width: 0%"></div></div><p id="uploadStatus">Processando...</p></div></div></div></div><div class="col-md-6 mb-4"><div class="card"><div class="card-header"><h5 class="mb-0">Estatísticas</h5></div><div class="card-body"><div class="row text-center"><div class="col-6"><h3><i class="fas fa-users text-primary"></i> <span id="totalUsuarios">1</span></h3><p class="text-muted">Usuários</p></div><div class="col-6"><h3><i class="fas fa-file-alt text-success"></i> <span id="totalRegistros">0</span></h3><p class="text-muted">Registros</p></div></div></div></div></div>
             <div class="row mb-4"><div class="col-12"><div class="card"><div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Gerenciar Usuários</h5><button class="btn btn-primary" onclick="showUserModal()"><i class="fas fa-plus"></i> Novo Usuário</button></div><div class="card-body"><div class="table-responsive"><table id="usersTable" class="table table-striped w-100"><thead><tr><th>Usuário</th><th>Perfil</th><th>Último Acesso</th><th>Ações</th></tr></thead><tbody></tbody></table></div></div></div></div></div>
             <div class="row"><div class="col-12"><div class="card"><div class="card-header"><h5 class="mb-0">Logs de Atividade</h5></div><div class="card-body"><div class="table-responsive"><table id="logsTable" class="table table-striped table-sm w-100"><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead><tbody></tbody></table></div></div></div></div></div>
         </main>
     </div>
 
-    <div class="modal fade" id="userModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="userModalTitle">Novo Usuário</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="userForm"><div class="mb-3"><label class="form-label">Usuário</label><input type="text" class="form-control" id="modalUsername" required></div><div class="mb-3"><label class="form-label">Senha</label><input type="password" class="form-control" id="modalPassword" required><small class="form-text text-muted">Deixe em branco para não alterar a senha existente.</small></div><div class="mb-3"><label class="form-label">Perfil</label><select class="form-control" id="modalRole" required><option value="user">Usuário</option><option value="admin">Administrador</option></select></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="saveUser()">Salvar</button></div></div></div></div>
+    <div class="modal fade" id="userModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="userModalTitle">Novo Usuário</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="userForm"><div class="mb-3"><label class="form-label">Usuário</label><input type="text" class="form-control" id="modalUsername" required></div><div class="mb-3"><label class="form-label">Senha</label><input type="password" class="form-control" id="modalPassword" required><small class="form-text text-muted">Deixe em branco para não alterar a senha existente.</small></div><div class="mb-3"><label class="form-label">Perfil</label><select class="form-control" id="modalRole" required><option value="user">Usuário de Consulta</option><option value="admin">Administrador</option></select></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="saveUser()">Salvar</button></div></div></div></div>
     <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
     <div id="loadingOverlay" class="loading-overlay d-none"><div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status"><span class="visually-hidden">Carregando...</span></div></div>
 
@@ -205,7 +205,11 @@
         let usersTable = null;
         let logsTable = null;
         let charts = {};
-        let systemUsers = [{ id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null }];
+        // *** ALTERAÇÃO: Adicionado usuário dgagro e definido o perfil como 'user' ***
+        let systemUsers = [
+            { id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null },
+            { id: 2, username: 'dgagro', password: 'dgagro123', role: 'user', lastAccess: null }
+        ];
         let systemLogs = [];
 
         // Funções Firebase
@@ -253,14 +257,16 @@
         async function carregarUsuariosFirebase() {
             try {
                 const doc = await db.collection('configuracao').doc('usuarios').get();
-                if (doc.exists) {
+                if (doc.exists && doc.data().usuarios.length > 0) {
                     console.log('Usuários carregados do Firebase');
-                    return doc.data().usuarios || [{ id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null }];
+                    return doc.data().usuarios;
                 }
-                return [{ id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null }];
+                // Se não houver usuários no Firebase, usa a lista padrão e a salva lá.
+                await salvarUsuariosFirebase(systemUsers);
+                return systemUsers;
             } catch (error) {
                 console.error('Erro ao carregar usuários:', error);
-                return [{ id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null }];
+                return systemUsers; // Retorna a lista padrão em caso de erro
             }
         }
 
@@ -289,24 +295,17 @@
         }
 
         // Monitorar status da conexão
-        firebase.firestore().enablePersistence()
-            .then(() => {
-                console.log('Persistência ativada');
-            })
-            .catch((err) => {
-                console.error('Erro na persistência:', err);
+        function monitorarConexao() {
+            const docRef = db.collection('health_check').doc('status');
+            docRef.onSnapshot(doc => {
+                document.getElementById('firebaseStatus').className = 'firebase-status firebase-connected';
+                document.getElementById('firebaseStatus').innerHTML = '<i class="fas fa-circle"></i> Online';
+            }, err => {
+                document.getElementById('firebaseStatus').className = 'firebase-status firebase-disconnected';
+                document.getElementById('firebaseStatus').innerHTML = '<i class="fas fa-circle"></i> Offline';
             });
+        }
 
-        // Monitorar status online/offline
-        firebase.firestore().onSnapshotsInSync(() => {
-            document.getElementById('firebaseStatus').className = 'firebase-status firebase-connected';
-            document.getElementById('firebaseStatus').innerHTML = '<i class="fas fa-circle"></i> Online';
-        });
-
-        firebase.firestore().disableNetwork().then(() => {
-            document.getElementById('firebaseStatus').className = 'firebase-status firebase-disconnected';
-            document.getElementById('firebaseStatus').innerHTML = '<i class="fas fa-circle"></i> Offline';
-        });
 
         function showLoading() { document.getElementById('loadingOverlay').classList.remove('d-none'); }
         function hideLoading() { document.getElementById('loadingOverlay').classList.add('d-none'); }
@@ -341,13 +340,17 @@
 
         async function initializeApp() {
             setupEventListeners();
+            monitorarConexao();
             
             // Carregar dados do Firebase
             showLoading();
             try {
-                agriculturalData = await carregarDadosFirebase();
-                systemUsers = await carregarUsuariosFirebase();
-                systemLogs = await carregarLogsFirebase();
+                // Carrega os dados da planilha e os usuários simultaneamente
+                [agriculturalData, systemUsers, systemLogs] = await Promise.all([
+                    carregarDadosFirebase(),
+                    carregarUsuariosFirebase(),
+                    carregarLogsFirebase()
+                ]);
                 
                 showToast('Sistema carregado com sucesso!', 'success');
             } catch (error) {
@@ -430,7 +433,7 @@
         }
 
         function loadDashboard() {
-            const data2025 = agriculturalData.filter(item => item.data && item.data.includes('2025'));
+            const data2025 = agriculturalData.filter(item => item.data && new Date(item.data).getUTCFullYear() === 2025);
             if (data2025.length === 0) {
                 document.getElementById('totalCana').textContent = 'Sem dados';
                 document.getElementById('atrMedio').textContent = 'Sem dados';
@@ -462,14 +465,14 @@
         function createChart(chartId, type, data) {
             const ctx = document.getElementById(chartId).getContext('2d');
             if (charts[chartId]) charts[chartId].destroy();
-            const chartData = { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#1FB8CD', '#FFC185', '#B4413C', '#5D878F', '#DB4545'], borderWidth: type === 'doughnut' ? 2 : 1 }] };
+            const chartData = { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#2E7D32', '#4CAF50', '#FF9800', '#2196F3', '#f44336'], borderWidth: type === 'doughnut' ? 2 : 1 }] };
             const options = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut', position: 'bottom' } }, scales: { y: { beginAtZero: true, display: type === 'bar' } } };
             charts[chartId] = new Chart(ctx, { type, data: chartData, options });
         }
 
         function loadReports() {
             initializeReportsTable();
-            aplicarFiltros(true);
+            aplicarFiltros(true); // Carga inicial sem filtros
             updateReportButtons();
         }
 
@@ -478,7 +481,7 @@
             reportsTable = $('#reportsTable').DataTable({
                 language: {
                     url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json',
-                    emptyTable: '<div class="text-center py-4 text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><br>Nenhum dado disponível. Carregue uma planilha para começar.</div>'
+                    emptyTable: '<div class="text-center py-4 text-muted"><i class="fas fa-info-circle fa-2x mb-2"></i><br>Nenhum dado disponível. Carregue uma planilha na área de Administração.</div>'
                 },
                 pageLength: 25,
                 responsive: true,
@@ -499,7 +502,7 @@
                 filteredData = agriculturalData.filter(item => 
                     (!filters.dataInicio || item.data >= filters.dataInicio) && (!filters.dataFim || item.data <= filters.dataFim) &&
                     (!filters.unidade || item.unidade === filters.unidade) && (!filters.frente || (item.descricaoFrente.match(/F (\d+)/) && item.descricaoFrente.match(/F (\d+)/)[1] === filters.frente)) &&
-                    (!filters.fazenda || item.codFazenda.toLowerCase().includes(filters.fazenda)) && (!filters.zona || item.zona == filters.zona)
+                    (!filters.fazenda || String(item.codFazenda).toLowerCase().includes(filters.fazenda)) && (!filters.zona || item.zona == filters.zona)
                 );
                 if (!isInitialLoad) showToast(`${filteredData.length} registros encontrados.`, 'success');
             }
@@ -607,7 +610,7 @@
             updateAdminStats();
             if (!usersTable) usersTable = $('#usersTable').DataTable({ language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json' }, pageLength: 5, responsive: true, order: [[0, 'asc']] });
             usersTable.clear();
-            systemUsers.forEach(user => { usersTable.row.add([ user.username, `<span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-primary'}">${user.role}</span>`, user.lastAccess ? formatDateTime(user.lastAccess) : 'Nunca', `<button class="btn btn-sm btn-outline-primary" onclick="editUser(${user.id})"><i class="fas fa-edit"></i></button> ${user.id !== 1 ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id})"><i class="fas fa-trash"></i></button>` : ''}` ]); });
+            systemUsers.forEach(user => { usersTable.row.add([ user.username, `<span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-primary'}">${user.role === 'admin' ? 'Administrador' : 'Usuário de Consulta'}</span>`, user.lastAccess ? formatDateTime(user.lastAccess) : 'Nunca', `<button class="btn btn-sm btn-outline-primary" onclick="editUser(${user.id})"><i class="fas fa-edit"></i></button> ${user.id !== 1 ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id})"><i class="fas fa-trash"></i></button>` : ''}` ]); });
             usersTable.draw();
 
             if (!logsTable) logsTable = $('#logsTable').DataTable({ language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json' }, pageLength: 10, responsive: true, order: [[0, 'desc']] });
@@ -675,7 +678,7 @@
                 
                 hideUploadProgress(); 
                 updateAdminStats();
-                showToast(`${agriculturalData.length} registros importados!`, 'success');
+                showToast(`${agriculturalData.length} registros importados e salvos online!`, 'success');
                 logActivity('Upload realizado', `Arquivo: ${fileName}, Registros: ${agriculturalData.length}`);
                 loadDashboard(); 
                 loadReports();
@@ -687,28 +690,43 @@
 
         function formatExcelDate(excelDate) {
             if (!excelDate) return new Date().toISOString().slice(0, 10);
-            if (typeof excelDate === 'number') return new Date((excelDate - 25569) * 86400 * 1000).toISOString().slice(0, 10);
+            if (typeof excelDate === 'number') {
+                // Adiciona a verificação para datas antes de 1900 que o Excel não suporta bem
+                if (excelDate > 60) excelDate--; 
+                return new Date((excelDate - 1) * 24 * 60 * 60 * 1000 + new Date('1900-01-01').getTime()).toISOString().slice(0, 10);
+            }
             if (typeof excelDate === 'string') {
+                // Tenta converter formatos como 'DD/MM/YYYY' ou 'YYYY-MM-DD'
                 const parts = excelDate.split(/[/.-]/);
                 if (parts.length === 3) {
-                    const day = parts[0].length === 4 ? parts[2] : parts[0]; const month = parts[1];
-                    const year = parts[0].length === 4 ? parts[0] : parts[2];
-                    return `${year.padStart(4, '20')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    const day = parts[0].length === 4 ? parts[2] : parts[0]; 
+                    const month = parts[1];
+                    const year = parts[0].length === 4 ? parts[0] : (parts[2].length === 2 ? '20' + parts[2] : parts[2]);
+                    const date = new Date(`${year}-${month}-${day}`);
+                    // Verifica se a data é válida
+                    if (!isNaN(date.getTime())) {
+                        return date.toISOString().slice(0, 10);
+                    }
                 }
             }
-            return new Date().toISOString().slice(0, 10);
+            // Retorno padrão caso a conversão falhe
+            const fallbackDate = new Date();
+            console.warn(`Data inválida encontrada: "${excelDate}". Usando data atual.`);
+            return fallbackDate.toISOString().slice(0, 10);
         }
         
         const userModal = new bootstrap.Modal(document.getElementById('userModal'));
         function showUserModal(userId = null) {
             const form = document.getElementById('userForm'); form.reset(); delete form.dataset.editId;
             document.getElementById('modalPassword').placeholder = "Senha (obrigatória)";
+            document.getElementById('modalPassword').required = true;
             if (userId) {
                 const user = systemUsers.find(u => u.id === userId);
                 if (user) {
                     document.getElementById('userModalTitle').textContent = 'Editar Usuário';
                     document.getElementById('modalUsername').value = user.username;
                     document.getElementById('modalPassword').placeholder = "Deixe em branco para não alterar";
+                    document.getElementById('modalPassword').required = false;
                     document.getElementById('modalRole').value = user.role; form.dataset.editId = userId;
                 }
             } else document.getElementById('userModalTitle').textContent = 'Novo Usuário';
@@ -719,28 +737,32 @@
         
         async function deleteUser(userId) {
             if (userId === 1) { showToast('Não é possível excluir o admin padrão.', 'error'); return; }
-            if (confirm('Tem certeza?')) {
+            if (confirm('Tem certeza que deseja excluir este usuário?')) {
+                const userToDelete = systemUsers.find(u => u.id === userId);
                 systemUsers = systemUsers.filter(u => u.id !== userId);
                 // Salvar usuários no Firebase
                 await salvarUsuariosFirebase(systemUsers);
                 loadAdmin(); 
-                showToast('Usuário excluído.', 'success');
+                showToast(`Usuário '${userToDelete.username}' excluído.`, 'success');
+                logActivity('Usuário Excluído', `Usuário: ${userToDelete.username}`);
             }
         }
 
         async function saveUser() {
             const form = document.getElementById('userForm'), username = document.getElementById('modalUsername').value.trim(), password = document.getElementById('modalPassword').value, role = document.getElementById('modalRole').value, editId = form.dataset.editId;
             if (!username) { showToast('Nome de usuário é obrigatório.', 'error'); return; }
-            if (systemUsers.find(u => u.username === username && u.id != editId)) { showToast('Nome de usuário já existe.', 'error'); return; }
+            if (systemUsers.find(u => u.username.toLowerCase() === username.toLowerCase() && u.id != editId)) { showToast('Nome de usuário já existe.', 'error'); return; }
 
             if (editId) {
                 const user = systemUsers.find(u => u.id == editId);
                 user.username = username; if (password) user.password = password; user.role = role;
                 showToast('Usuário atualizado.', 'success');
+                logActivity('Usuário Atualizado', `Usuário: ${username}`);
             } else {
-                if (!password) { showToast('Senha é obrigatória.', 'error'); return; }
+                if (!password) { showToast('Senha é obrigatória para novos usuários.', 'error'); return; }
                 systemUsers.push({ id: Math.max(0, ...systemUsers.map(u => u.id)) + 1, username, password, role, lastAccess: null });
                 showToast('Usuário criado.', 'success');
+                logActivity('Usuário Criado', `Usuário: ${username}`);
             }
             
             // Salvar usuários no Firebase
@@ -751,51 +773,6 @@
         }
         
         document.addEventListener('DOMContentLoaded', initializeApp);
-
-        // <-- CÓDIGO ADICIONADO AQUI -->
-        
-        // Esta função vai no <script> do seu index.html
-        async function salvarDadosNoBanco(event) {
-            event.preventDefault(); // Impede o formulário de recarregar a página
-
-            const dadosParaSalvar = {
-                unidade: document.getElementById('unidadeInput').value,
-                toneladas: parseFloat(document.getElementById('toneladasInput').value)
-            };
-            
-            // Mostra um feedback para o usuário
-            alert('Salvando no banco de dados...');
-
-            try {
-                // **AQUI ESTÁ A CONEXÃO!**
-                // O seu site (frontend) chama a função no servidor (backend)
-                const response = await fetch('/.netlify/functions/salvar-relatorio', {
-                    method: 'POST', // Estamos enviando dados
-                    body: JSON.stringify(dadosParaSalvar) // Converte os dados para texto JSON
-                });
-
-                const resultado = await response.json();
-
-                if (!response.ok) {
-                    // Se o servidor retornou um erro
-                    throw new Error(resultado.error);
-                }
-
-                alert(`Sucesso! Relatório salvo com ID: ${resultado.data.id}`);
-                document.getElementById('formRelatorio').reset(); // Limpa o formulário
-
-            } catch (error) {
-                console.error('Falha ao salvar:', error);
-                alert(`Erro: ${error.message}`);
-            }
-        }
-
-        // Vincule esta função ao seu formulário
-        // ATENÇÃO: O elemento 'formRelatorio' precisa existir no seu HTML para esta linha funcionar.
-        if (document.getElementById('formRelatorio')) {
-            document.getElementById('formRelatorio').addEventListener('submit', salvarDadosNoBanco);
-        }
-
     </script>
 </body>
 </html>
