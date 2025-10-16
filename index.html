@@ -218,32 +218,26 @@
             const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
             if (jsonData.length === 0) throw new Error('A planilha do GitHub está vazia.');
 
-            // =============================================================================
-            // *** FUNÇÃO DE LEITURA DE NÚMEROS AINDA MAIS ROBUSTA ***
-            // Esta função agora entende tanto "1.234,56" quanto "1,234.56"
             const parseRobustNumero = (valor) => {
                 if (valor === null || valor === undefined || valor === '') return 0;
-                
                 let str = String(valor);
-                
-                // Verifica se a vírgula é o último separador, indicando formato brasileiro (1.234,56)
                 const lastComma = str.lastIndexOf(',');
                 const lastPeriod = str.lastIndexOf('.');
-                
                 if (lastComma > lastPeriod) {
-                    // Formato brasileiro: remove pontos e troca vírgula por ponto.
                     str = str.replace(/\./g, '').replace(',', '.');
                 } else {
-                    // Formato americano ou sem separador de milhar: apenas remove vírgulas.
                     str = str.replace(/,/g, '');
                 }
-
                 const numero = parseFloat(str);
                 return isNaN(numero) ? 0 : numero;
             };
-            // =============================================================================
 
             const processedData = jsonData.map(row => {
+                // =============================================================================
+                // *** LINHA DE DIAGNÓSTICO ADICIONADA AQUI ***
+                console.log("Valor Original da Planilha para 'Entrada de Cana (t)':", row['Entrada de Cana (t)']);
+                // =============================================================================
+
                 const required = ['Unidade', 'Data', 'Entrada de Cana (t)', 'Frente'];
                 if (required.some(col => !row.hasOwnProperty(col))) {
                     console.warn('Linha ignorada por falta de colunas obrigatórias:', row);
@@ -257,7 +251,6 @@
                     codFazenda: String(row['Cód. Fazenda'] || ''), 
                     zona: parseInt(row['Zona']) || 0, 
                     talhao: parseInt(row['Talhão']) || 0,
-                    // *** Correção aplicada em todos os campos numéricos ***
                     entradaCana: parseRobustNumero(row['Entrada de Cana (t)']), 
                     atr: parseRobustNumero(row['ATR (kg/t)']),
                     raioMedio: parseRobustNumero(row['Raio Médio (km)']), 
