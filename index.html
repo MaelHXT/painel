@@ -203,9 +203,6 @@
     ];
     let systemLogs = [];
 
-    // =================================================================================
-    // FUNÇÃO PARA CARREGAR E PROCESSAR DADOS DO GITHUB
-    // =================================================================================
     async function carregarDadosDoGitHub() {
         if (!GITHUB_EXCEL_URL || !GITHUB_EXCEL_URL.startsWith('https://raw.githubusercontent.com')) {
             showToast('URL do arquivo Excel no GitHub não foi configurada corretamente.', 'error');
@@ -221,15 +218,18 @@
             const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
             if (jsonData.length === 0) throw new Error('A planilha do GitHub está vazia.');
 
-            // *** NOVA FUNÇÃO AUXILIAR PARA LER NÚMEROS CORRETAMENTE ***
+            // =============================================================================
+            // *** AJUSTE IMPORTANTE PARA CORRIGIR O 'NaN' ***
+            // Nova função auxiliar para ler números no formato brasileiro (com vírgula)
             const parseNumeroBrasileiro = (valor) => {
-                if (!valor) return 0;
+                if (valor === null || valor === undefined || valor === '') return 0;
                 // Converte para string, remove pontos de milhar, e troca vírgula por ponto
                 const valorLimpo = String(valor).replace(/\./g, '').replace(',', '.');
                 const numero = parseFloat(valorLimpo);
-                // Se o resultado não for um número (ex: texto na célula), retorna 0
+                // Se o resultado não for um número (ex: célula com texto), retorna 0
                 return isNaN(numero) ? 0 : numero;
             };
+            // =============================================================================
 
             const processedData = jsonData.map(row => {
                 const required = ['Unidade', 'Data', 'Entrada de Cana (t)', 'Frente'];
@@ -245,13 +245,13 @@
                     codFazenda: String(row['Cód. Fazenda'] || ''), 
                     zona: parseInt(row['Zona']) || 0, 
                     talhao: parseInt(row['Talhão']) || 0,
-                    // *** MUDANÇA APLICADA AQUI E NOS CAMPOS ABAIXO ***
+                    // *** Correção aplicada em todos os campos numéricos ***
                     entradaCana: parseNumeroBrasileiro(row['Entrada de Cana (t)']), 
                     atr: parseNumeroBrasileiro(row['ATR (kg/t)']),
                     raioMedio: parseNumeroBrasileiro(row['Raio Médio (km)']), 
                     impurezaMineral: parseNumeroBrasileiro(row['Impureza Mineral'])
                 };
-            }).filter(item => item && item.unidade); // Permitir itens com entradaCana = 0
+            }).filter(item => item && item.unidade);
 
             if (processedData.length === 0) throw new Error('Nenhum registro válido encontrado na planilha.');
             showToast(`Sucesso! ${processedData.length} registros carregados.`, 'success');
@@ -265,7 +265,6 @@
         }
     }
 
-    // Funções de gerenciamento de usuários e logs (mantidas com Firebase)
     async function salvarUsuariosFirebase(usuarios) { try { await db.collection('configuracao').doc('usuarios').set({ usuarios }); } catch (e) { console.error(e); } }
     async function carregarUsuariosFirebase() { try { const doc = await db.collection('configuracao').doc('usuarios').get(); if (doc.exists && doc.data().usuarios.length > 0) { return doc.data().usuarios; } await salvarUsuariosFirebase(systemUsers); return systemUsers; } catch (e) { console.error(e); return systemUsers; } }
     async function salvarLogsFirebase(logs) { try { await db.collection('configuracao').doc('logs').set({ logs: logs.slice(0, 100) }); } catch (e) { console.error(e); } }
@@ -519,7 +518,7 @@
     }
     
     function formatExcelDate(excelDate) {
-        if (!excelDate) return null;
+        if (excelDate === null || excelDate === undefined) return null;
         if (typeof excelDate === 'number') {
             return new Date((excelDate - 25569) * 86400 * 1000).toISOString().slice(0, 10);
         }
