@@ -39,8 +39,10 @@
     // FUNÇÃO PARA CARREGAR E PROCESSAR DADOS DO GITHUB
     // =================================================================================
     async function carregarDadosDoGitHub() {
-        if (!GITHUB_EXCEL_URL || !GITHUB_EXCEL_URL.startsWith('https://raw.githubusercontent.com/MaelHXT/painel/e1f7ca86ffd260c809330397b684144952816ac5/dadosdg.xlsx')) {
+        // *** LINHA CORRIGIDA: Verificação agora é genérica e correta ***
+        if (!GITHUB_EXCEL_URL || !GITHUB_EXCEL_URL.startsWith('https://raw.githubusercontent.com')) {
             showToast('URL do arquivo Excel no GitHub não foi configurada corretamente. Use o formato "Raw".', 'error');
+            console.error("A constante GITHUB_EXCEL_URL não está configurada ou é inválida.");
             return [];
         }
 
@@ -58,14 +60,14 @@
             if (jsonData.length === 0) throw new Error('A planilha do GitHub está vazia.');
 
             const processedData = jsonData.map((row) => {
-                // Adicionado 'Frente' à verificação de colunas obrigatórias
                 const required = ['Unidade', 'Data', 'Entrada de Cana (t)', 'Frente'];
-                if (required.some(col => !row.hasOwnProperty(col))) return null;
+                if (required.some(col => !row.hasOwnProperty(col))) {
+                    console.warn('Linha ignorada por não ter todas as colunas obrigatórias:', row);
+                    return null;
+                }
                 
                 return {
-                    // *** MUDANÇA AQUI: Lendo a nova coluna "Frente" ***
                     codFrente: String(row['Frente'] || ''),
-                    
                     unidade: row['Unidade'], 
                     data: formatExcelDate(row['Data']), 
                     descricaoFrente: row['Descrição Frente'] || '',
@@ -79,7 +81,7 @@
                 };
             }).filter(item => item && item.unidade && item.entradaCana > 0);
 
-            if (processedData.length === 0) throw new Error('Nenhum registro válido encontrado na planilha.');
+            if (processedData.length === 0) throw new Error('Nenhum registro válido encontrado. Verifique se as colunas obrigatórias (Unidade, Data, Frente, Entrada de Cana (t)) existem e estão preenchidas na planilha.');
             
             showToast(`Sucesso! ${processedData.length} registros carregados do GitHub.`, 'success');
             return processedData;
@@ -207,7 +209,6 @@
         if(hasData) {
             createChart('unidadeChart', 'doughnut', data2025.reduce((acc, item) => { acc[item.unidade] = (acc[item.unidade] || 0) + item.entradaCana; return acc; }, {}));
             createChart('frenteChart', 'bar', data2025.reduce((acc, item) => {
-                // *** MUDANÇA AQUI: Usando a nova coluna "codFrente" ***
                 if (item.codFrente) {
                     const frenteCode = item.codFrente;
                     const frenteLabel = `${frenteCode} - ${SYSTEM_CONFIG.frentes[frenteCode] || 'N/A'}`;
@@ -256,7 +257,6 @@
                 (!filters.dataInicio || item.data >= filters.dataInicio) && 
                 (!filters.dataFim || item.data <= filters.dataFim) &&
                 (!filters.unidade || item.unidade === filters.unidade) && 
-                // *** MUDANÇA AQUI: Lógica de filtro simplificada para usar a nova coluna ***
                 (!filters.frente || item.codFrente === filters.frente) &&
                 (!filters.fazenda || String(item.codFazenda).toLowerCase().includes(filters.fazenda)) && 
                 (!filters.zona || item.zona == filters.zona)
@@ -311,7 +311,6 @@
                 group.atrSum += item.atr * item.entradaCana;
                 group.raioMedioSum += item.raioMedio * item.entradaCana;
                 group.impurezaMineralSum += item.impurezaMineral * item.entradaCana;
-                // *** MUDANÇA AQUI: Adicionando o código da nova coluna ao grupo ***
                 if (item.codFrente) {
                     group.frentes.add(item.codFrente);
                 }
@@ -424,4 +423,3 @@
     
     document.addEventListener('DOMContentLoaded', initializeApp);
 </script>
-
