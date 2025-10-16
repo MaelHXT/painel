@@ -102,9 +102,24 @@
         .summary-card-impureza { background: linear-gradient(135deg, #FF9800, #f57c00); }
         .summary-card-atr { background: linear-gradient(135deg, #9C27B0, #7b1fa2); }
         .summary-card h3 { font-size: 1.75rem; }
+        .firebase-status {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        .firebase-connected { background-color: #4CAF50; color: white; }
+        .firebase-disconnected { background-color: #f44336; color: white; }
     </style>
 </head>
 <body>
+    <div id="firebaseStatus" class="firebase-status firebase-disconnected">
+        <i class="fas fa-circle"></i> Offline
+    </div>
+
     <div id="loginScreen" class="login-container">
         <div class="login-card">
             <div class="logo-container text-center mb-4">
@@ -140,61 +155,7 @@
         
         <main id="adminSection" class="container-fluid py-4 d-none">
             <h2 class="mb-4">Painel Administrativo</h2>
-            <div class="row mb-4">
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-header"><h5 class="mb-0">Upload de Planilha</h5></div>
-                        <div class="card-body">
-                            <div class="upload-area" id="uploadArea">
-                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                                <h5>Carregue sua planilha Excel</h5>
-                                <p class="text-muted">Os dados da planilha serão salvos no banco de dados.</p>
-                                <small class="text-muted d-block">Formatos: .xlsx, .xls</small>
-                                <input type="file" id="excelFile" accept=".xlsx,.xls" class="d-none">
-                            </div>
-                            <div id="uploadProgress" class="d-none">
-                                <div class="progress mb-3" style="height: 8px;"><div class="progress-bar" role="progressbar" style="width: 0%"></div></div>
-                                <p id="uploadStatus">Processando...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 mb-4">
-                    <div class="card">
-                        <div class="card-header"><h5 class="mb-0">Estatísticas</h5></div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-6"><h3><i class="fas fa-users text-primary"></i> <span id="totalUsuarios">1</span></h3><p class="text-muted">Usuários</p></div>
-                                <div class="col-6"><h3><i class="fas fa-file-alt text-success"></i> <span id="totalRegistros">0</span></h3><p class="text-muted">Registros</p></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header"><h5 class="mb-0">Adicionar Relatório Manual</h5></div>
-                        <div class="card-body">
-                             <form id="formRelatorio">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="unidadeInput" class="form-label">Unidade</label>
-                                        <input type="text" class="form-control" id="unidadeInput" required placeholder="Ex: COPI">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="toneladasInput" class="form-label">Toneladas</label>
-                                        <input type="number" step="0.01" class="form-control" id="toneladasInput" required placeholder="Ex: 150.5">
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Salvar no Banco de Dados</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            <div class="row mb-4"><div class="col-md-6 mb-4"><div class="card"><div class="card-header"><h5 class="mb-0">Upload de Planilha</h5></div><div class="card-body"><div class="upload-area" id="uploadArea"><i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i><h5>Carregue sua planilha Excel</h5><p class="text-muted">O sistema substituirá os dados existentes.</p><small class="text-muted d-block">Formatos: .xlsx, .xls</small><input type="file" id="excelFile" accept=".xlsx,.xls" class="d-none"></div><div id="uploadProgress" class="d-none"><div class="progress mb-3" style="height: 8px;"><div class="progress-bar" role="progressbar" style="width: 0%"></div></div><p id="uploadStatus">Processando...</p></div></div></div></div><div class="col-md-6 mb-4"><div class="card"><div class="card-header"><h5 class="mb-0">Estatísticas</h5></div><div class="card-body"><div class="row text-center"><div class="col-6"><h3><i class="fas fa-users text-primary"></i> <span id="totalUsuarios">1</span></h3><p class="text-muted">Usuários</p></div><div class="col-6"><h3><i class="fas fa-file-alt text-success"></i> <span id="totalRegistros">0</span></h3><p class="text-muted">Registros</p></div></div></div></div></div></div>
             <div class="row mb-4"><div class="col-12"><div class="card"><div class="card-header d-flex justify-content-between align-items-center"><h5 class="mb-0">Gerenciar Usuários</h5><button class="btn btn-primary" onclick="showUserModal()"><i class="fas fa-plus"></i> Novo Usuário</button></div><div class="card-body"><div class="table-responsive"><table id="usersTable" class="table table-striped w-100"><thead><tr><th>Usuário</th><th>Perfil</th><th>Último Acesso</th><th>Ações</th></tr></thead><tbody></tbody></table></div></div></div></div></div>
             <div class="row"><div class="col-12"><div class="card"><div class="card-header"><h5 class="mb-0">Logs de Atividade</h5></div><div class="card-body"><div class="table-responsive"><table id="logsTable" class="table table-striped table-sm w-100"><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead><tbody></tbody></table></div></div></div></div></div>
         </main>
@@ -213,7 +174,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
     <script>
+        // Configuração do Firebase - SUBSTITUA COM SUAS PRÓPRIAS CREDENCIAIS
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkSZOrfwgnthsUxdOlycLVO5WQF9rUXkw",
+            authDomain: "relatorio-agricola.firebaseapp.com",
+            projectId: "relatorio-agricola",
+            storageBucket: "relatorio-agricola.firebasestorage.app",
+            messagingSenderId: "718423859625",
+            appId: "1:718423859625:web:2549a6bd2dd3ff871a24b8"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         // Sistema de Relatórios Agrícolas
         const SYSTEM_CONFIG = {
             unidades: { 40: 'COPI', 52: 'RAF', 60: 'IASF' },
@@ -227,45 +205,108 @@
         let usersTable = null;
         let logsTable = null;
         let charts = {};
-        // O sistema de usuários agora é local, sem persistência em banco por enquanto.
         let systemUsers = [{ id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null }];
         let systemLogs = [];
 
-        // NOVA FUNÇÃO PARA SALVAR DADOS NO BANCO DE DADOS NETLIFY/NEON
-        async function salvarDadosNoBanco(event) {
-            event.preventDefault(); // Impede o formulário de recarregar a página
-
-            const dadosParaSalvar = {
-                unidade: document.getElementById('unidadeInput').value,
-                toneladas: parseFloat(document.getElementById('toneladasInput').value)
-            };
-            
-            showLoading(); // Mostra o spinner de carregamento
-
+        // Funções Firebase
+        async function salvarDadosFirebase(dados) {
             try {
-                // O seu site (frontend) chama a função no servidor (backend)
-                const response = await fetch('/.netlify/functions/salvar-relatorio', {
-                    method: 'POST', // Estamos enviando dados
-                    body: JSON.stringify(dadosParaSalvar) // Converte os dados para texto JSON
+                await db.collection('dadosAgricolas').doc('principal').set({
+                    agriculturalData: dados,
+                    ultimaAtualizacao: new Date(),
+                    usuario: currentUser.username
                 });
-
-                const resultado = await response.json();
-
-                if (!response.ok) {
-                    // Se o servidor retornou um erro
-                    throw new Error(resultado.error);
-                }
-
-                showToast(`Sucesso! Relatório salvo com ID: ${resultado.data.id}`, 'success');
-                document.getElementById('formRelatorio').reset(); // Limpa o formulário
-
+                console.log('Dados salvos no Firebase');
             } catch (error) {
-                console.error('Falha ao salvar:', error);
-                showToast(`Erro: ${error.message}`, 'error');
-            } finally {
-                hideLoading(); // Esconde o spinner de carregamento
+                console.error('Erro ao salvar dados:', error);
+                showToast('Erro ao salvar dados online.', 'error');
             }
         }
+
+        async function carregarDadosFirebase() {
+            try {
+                const doc = await db.collection('dadosAgricolas').doc('principal').get();
+                if (doc.exists) {
+                    console.log('Dados carregados do Firebase');
+                    return doc.data().agriculturalData || [];
+                }
+                return [];
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                showToast('Erro ao carregar dados online.', 'error');
+                return [];
+            }
+        }
+
+        async function salvarUsuariosFirebase(usuarios) {
+            try {
+                await db.collection('configuracao').doc('usuarios').set({
+                    usuarios: usuarios,
+                    atualizadoEm: new Date()
+                });
+                console.log('Usuários salvos no Firebase');
+            } catch (error) {
+                console.error('Erro ao salvar usuários:', error);
+            }
+        }
+
+        async function carregarUsuariosFirebase() {
+            try {
+                const doc = await db.collection('configuracao').doc('usuarios').get();
+                if (doc.exists) {
+                    console.log('Usuários carregados do Firebase');
+                    return doc.data().usuarios || [{ id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null }];
+                }
+                return [{ id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null }];
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+                return [{ id: 1, username: 'admin', password: 'admin123', role: 'admin', lastAccess: null }];
+            }
+        }
+
+        async function salvarLogsFirebase(logs) {
+            try {
+                await db.collection('configuracao').doc('logs').set({
+                    logs: logs.slice(0, 100), // Mantém apenas os 100 logs mais recentes
+                    atualizadoEm: new Date()
+                });
+            } catch (error) {
+                console.error('Erro ao salvar logs:', error);
+            }
+        }
+
+        async function carregarLogsFirebase() {
+            try {
+                const doc = await db.collection('configuracao').doc('logs').get();
+                if (doc.exists) {
+                    return doc.data().logs || [];
+                }
+                return [];
+            } catch (error) {
+                console.error('Erro ao carregar logs:', error);
+                return [];
+            }
+        }
+
+        // Monitorar status da conexão
+        firebase.firestore().enablePersistence()
+            .then(() => {
+                console.log('Persistência ativada');
+            })
+            .catch((err) => {
+                console.error('Erro na persistência:', err);
+            });
+
+        // Monitorar status online/offline
+        firebase.firestore().onSnapshotsInSync(() => {
+            document.getElementById('firebaseStatus').className = 'firebase-status firebase-connected';
+            document.getElementById('firebaseStatus').innerHTML = '<i class="fas fa-circle"></i> Online';
+        });
+
+        firebase.firestore().disableNetwork().then(() => {
+            document.getElementById('firebaseStatus').className = 'firebase-status firebase-disconnected';
+            document.getElementById('firebaseStatus').innerHTML = '<i class="fas fa-circle"></i> Offline';
+        });
 
         function showLoading() { document.getElementById('loadingOverlay').classList.remove('d-none'); }
         function hideLoading() { document.getElementById('loadingOverlay').classList.add('d-none'); }
@@ -290,6 +331,9 @@
             };
             systemLogs.unshift(logEntry);
             if (systemLogs.length > 100) systemLogs.pop();
+            
+            // Salvar logs no Firebase
+            await salvarLogsFirebase(systemLogs);
         }
 
         function formatDateTime(dateString) { return new Date(dateString).toLocaleString('pt-BR'); }
@@ -297,7 +341,22 @@
 
         async function initializeApp() {
             setupEventListeners();
-            // Lógica de carregar dados do banco de dados pode ser adicionada aqui no futuro
+            
+            // Carregar dados do Firebase
+            showLoading();
+            try {
+                agriculturalData = await carregarDadosFirebase();
+                systemUsers = await carregarUsuariosFirebase();
+                systemLogs = await carregarLogsFirebase();
+                
+                showToast('Sistema carregado com sucesso!', 'success');
+            } catch (error) {
+                console.error('Erro ao carregar dados iniciais:', error);
+                showToast('Usando dados locais (modo offline)', 'warning');
+            } finally {
+                hideLoading();
+            }
+            
             showLoginScreen();
             logActivity('Sistema iniciado');
         }
@@ -312,13 +371,6 @@
             uploadArea.addEventListener('drop', handleFileDrop);
             fileInput.addEventListener('change', handleFileSelect);
             document.getElementById('userForm').addEventListener('submit', (e) => { e.preventDefault(); saveUser(); });
-
-            // VINCULA A FUNÇÃO DE SALVAR AO NOVO FORMULÁRIO
-            // Fazemos isso aqui para garantir que o listener só seja adicionado uma vez
-            const formRelatorio = document.getElementById('formRelatorio');
-            if(formRelatorio) {
-                formRelatorio.addEventListener('submit', salvarDadosNoBanco);
-            }
         }
 
         function handleLogin(e) {
@@ -378,7 +430,6 @@
         }
 
         function loadDashboard() {
-            // No futuro, esta função carregará dados do banco de dados.
             const data2025 = agriculturalData.filter(item => item.data && item.data.includes('2025'));
             if (data2025.length === 0) {
                 document.getElementById('totalCana').textContent = 'Sem dados';
@@ -437,11 +488,30 @@
         }
         
         function aplicarFiltros(isInitialLoad = false) {
-            // ... (restante da sua lógica de filtros)
+            if (agriculturalData.length === 0) {
+                filteredData = [];
+            } else {
+                const filters = {
+                    dataInicio: document.getElementById('dataInicio').value, dataFim: document.getElementById('dataFim').value,
+                    unidade: document.getElementById('filtroUnidade').value, frente: document.getElementById('filtroFrente').value,
+                    fazenda: document.getElementById('filtroFazenda').value.toLowerCase(), zona: document.getElementById('filtroZona').value
+                };
+                filteredData = agriculturalData.filter(item => 
+                    (!filters.dataInicio || item.data >= filters.dataInicio) && (!filters.dataFim || item.data <= filters.dataFim) &&
+                    (!filters.unidade || item.unidade === filters.unidade) && (!filters.frente || (item.descricaoFrente.match(/F (\d+)/) && item.descricaoFrente.match(/F (\d+)/)[1] === filters.frente)) &&
+                    (!filters.fazenda || item.codFazenda.toLowerCase().includes(filters.fazenda)) && (!filters.zona || item.zona == filters.zona)
+                );
+                if (!isInitialLoad) showToast(`${filteredData.length} registros encontrados.`, 'success');
+            }
+            updateReportsTable();
+            updateSummaryCards();
         }
 
         function limparFiltros() {
-            // ... (restante da sua lógica de filtros)
+            if (agriculturalData.length === 0) return;
+            ['dataInicio', 'dataFim', 'filtroUnidade', 'filtroFrente', 'filtroFazenda', 'filtroZona'].forEach(id => document.getElementById(id).value = '');
+            aplicarFiltros(true);
+            showToast('Filtros limpos.', 'info');
         }
 
         function updateReportButtons() {
@@ -451,19 +521,86 @@
         }
 
         function updateSummaryCards() {
-            // ... (restante da sua lógica)
+            document.getElementById('summaryCards').style.display = agriculturalData.length === 0 ? 'none' : 'flex';
+            if (filteredData.length === 0) {
+                document.getElementById('summaryToneladas').textContent = '0 t'; document.getElementById('summaryDistancia').textContent = '0 km';
+                document.getElementById('summaryImpureza').textContent = '0%'; document.getElementById('summaryATR').textContent = '0 kg/t'; return;
+            }
+            const totalToneladas = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
+            document.getElementById('summaryToneladas').textContent = formatNumber(totalToneladas, 1) + ' t';
+            document.getElementById('summaryDistancia').textContent = formatNumber(filteredData.reduce((sum, item) => sum + item.raioMedio, 0) / filteredData.length, 1) + ' km';
+            document.getElementById('summaryImpureza').textContent = formatNumber(filteredData.reduce((sum, item) => sum + item.impurezaMineral, 0) / filteredData.length, 1) + '%';
+            document.getElementById('summaryATR').textContent = formatNumber(totalToneladas > 0 ? filteredData.reduce((sum, item) => sum + (item.atr * item.entradaCana), 0) / totalToneladas : 0, 1) + ' kg/t';
         }
 
         function updateReportsTable() {
-            // ... (restante da sua lógica)
+            if (!reportsTable) return;
+            reportsTable.clear();
+            if (filteredData.length > 0) {
+                const totalCana = filteredData.reduce((sum, item) => sum + item.entradaCana, 0);
+                const groupedData = filteredData.reduce((acc, item) => {
+                    const key = `${item.codFazenda}-${item.zona}-${item.talhao}`;
+                    if (!acc[key]) {
+                        acc[key] = {
+                            unidade: item.unidade, codFazenda: item.codFazenda, zona: item.zona, talhao: item.talhao,
+                            entradaCana: 0, atrSum: 0, raioMedioSum: 0, impurezaMineralSum: 0, count: 0, frentes: new Set()
+                        };
+                    }
+                    const group = acc[key];
+                    group.entradaCana += item.entradaCana;
+                    group.atrSum += item.atr * item.entradaCana;
+                    group.raioMedioSum += item.raioMedio * item.entradaCana;
+                    group.impurezaMineralSum += item.impurezaMineral * item.entradaCana;
+                    const frenteMatch = item.descricaoFrente.match(/F (\d+)/);
+                    if (frenteMatch) group.frentes.add(frenteMatch[1]);
+                    return acc;
+                }, {});
+                
+                Object.values(groupedData).forEach(group => {
+                    const frenteDesc = [...group.frentes].map(f => `${f}-${SYSTEM_CONFIG.frentes[f] || ''}`).join(', ');
+                    reportsTable.row.add([
+                        group.unidade, frenteDesc, group.codFazenda, group.zona, group.talhao,
+                        formatNumber(group.entradaCana, 1), formatNumber(totalCana > 0 ? (group.entradaCana / totalCana * 100) : 0, 2) + '%',
+                        formatNumber(group.entradaCana > 0 ? group.raioMedioSum / group.entradaCana : 0, 1),
+                        formatNumber(group.entradaCana > 0 ? group.atrSum / group.entradaCana : 0, 1),
+                        formatNumber(group.entradaCana > 0 ? group.impurezaMineralSum / group.entradaCana : 0, 1)
+                    ]).draw(false);
+                });
+            }
+            reportsTable.draw();
         }
         
         function exportarExcel() {
-            // ... (restante da sua lógica)
+            if (filteredData.length === 0) { showToast('Nenhum dado para exportar.', 'warning'); return; }
+            showLoading();
+            setTimeout(() => {
+                const headers = ['Unidade', 'Frente', 'Fazenda', 'Zona', 'Talhão', 'TC (t)', '% Part.', 'Dist.Méd (km)', 'ATR (kg/t)', 'IMP Min (%)'];
+                const dataToExport = reportsTable.rows({ search: 'applied' }).data().toArray();
+                const ws = XLSX.utils.aoa_to_sheet([headers, ...dataToExport]);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+                XLSX.writeFile(wb, `relatorio_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                hideLoading();
+                showToast('Relatório Excel gerado!', 'success');
+            }, 250);
         }
 
         function exportarPDF() {
-           // ... (restante da sua lógica)
+            if (filteredData.length === 0) { showToast('Nenhum dado para exportar.', 'warning'); return; }
+            showLoading();
+            setTimeout(() => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('l', 'mm', 'a4');
+                doc.text('Relatório de Dados Agrícolas', 15, 20);
+                doc.autoTable({
+                    head: [['Unidade', 'Frente', 'Fazenda', 'Zona', 'Talhão', 'TC (t)', '% Part.', 'Dist.Méd', 'ATR', 'IMP Min']],
+                    body: reportsTable.rows({ search: 'applied' }).data().toArray(),
+                    startY: 28, theme: 'grid', headStyles: { fillColor: [46, 125, 50] }, styles: { fontSize: 7 }
+                });
+                doc.save(`relatorio_${new Date().toISOString().slice(0, 10)}.pdf`);
+                hideLoading();
+                showToast('Relatório PDF gerado!', 'success');
+            }, 250);
         }
 
         function loadAdmin() {
@@ -481,23 +618,86 @@
 
         function updateAdminStats() {
             document.getElementById('totalUsuarios').textContent = systemUsers.length;
-            // A contagem de registros agora virá do banco de dados
-            // document.getElementById('totalRegistros').textContent = agriculturalData.length.toLocaleString('pt-BR');
+            document.getElementById('totalRegistros').textContent = agriculturalData.length.toLocaleString('pt-BR');
         }
 
         function handleFileDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('dragover'); if (e.dataTransfer.files.length > 0) processExcelFile(e.dataTransfer.files[0]); }
         function handleFileSelect(e) { if (e.target.files.length > 0) processExcelFile(e.target.files[0]); }
         
         async function processExcelFile(file) {
-            // Esta função agora precisa ser modificada para enviar cada linha para o banco de dados
-            // usando a função salvarDadosNoBanco ou uma função similar em lote.
-            showToast('Funcionalidade de Upload de Planilha precisa ser adaptada para o novo banco de dados.', 'warning');
+            if (!file.name.match(/\.(xlsx|xls)$/)) { showToast('Formato inválido. Use .xlsx ou .xls.', 'error'); return; }
+            showUploadProgress();
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    const jsonData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    if (jsonData.length === 0) throw new Error('Planilha vazia.');
+                    await processExcelData(jsonData, file.name);
+                } catch (error) { hideUploadProgress(true); showToast('Erro ao ler arquivo: ' + error.message, 'error'); }
+            };
+            reader.readAsArrayBuffer(file);
         }
         
-        function showUploadProgress() { /* ... */ }
-        function hideUploadProgress(isError = false) { /* ... */ }
-        async function processExcelData(jsonData, fileName) { /* ... */ }
-        function formatExcelDate(excelDate) { /* ... */ }
+        function showUploadProgress() {
+            document.getElementById('uploadProgress').classList.remove('d-none'); document.getElementById('uploadArea').style.display = 'none';
+            const bar = document.querySelector('#uploadProgress .progress-bar');
+            bar.style.width = '50%'; bar.classList.add('progress-bar-striped', 'progress-bar-animated');
+            document.getElementById('uploadStatus').textContent = 'Processando...';
+        }
+
+        function hideUploadProgress(isError = false) {
+            const bar = document.querySelector('#uploadProgress .progress-bar');
+            if (!isError) { bar.style.width = '100%'; bar.classList.remove('progress-bar-striped'); document.getElementById('uploadStatus').textContent = 'Concluído!'; }
+            setTimeout(() => {
+                document.getElementById('uploadProgress').classList.add('d-none'); document.getElementById('uploadArea').style.display = 'block';
+                bar.style.width = '0%'; document.getElementById('excelFile').value = '';
+            }, isError ? 500 : 1500);
+        }
+
+        async function processExcelData(jsonData, fileName) {
+            try {
+                agriculturalData = jsonData.map((row) => {
+                    const required = ['Unidade', 'Data', 'Entrada de Cana (t)'];
+                    if (required.some(col => !row.hasOwnProperty(col))) return null;
+                    return {
+                        unidade: row['Unidade'], data: formatExcelDate(row['Data']), descricaoFrente: row['Descrição Frente'] || '',
+                        codFazenda: String(row['Cód. Fazenda'] || ''), zona: parseInt(row['Zona']) || 0, talhao: parseInt(row['Talhão']) || 0,
+                        entradaCana: parseFloat(row['Entrada de Cana (t)']) || 0, atr: parseFloat(row['ATR (kg/t)']) || 0,
+                        raioMedio: parseFloat(row['Raio Médio (km)']) || 0, impurezaMineral: parseFloat(row['Impureza Mineral']) || 0
+                    };
+                }).filter(item => item && item.unidade && item.entradaCana > 0);
+                
+                if (agriculturalData.length === 0) throw new Error('Nenhum registro válido encontrado.');
+                
+                // Salvar dados no Firebase
+                await salvarDadosFirebase(agriculturalData);
+                
+                hideUploadProgress(); 
+                updateAdminStats();
+                showToast(`${agriculturalData.length} registros importados!`, 'success');
+                logActivity('Upload realizado', `Arquivo: ${fileName}, Registros: ${agriculturalData.length}`);
+                loadDashboard(); 
+                loadReports();
+            } catch (error) { 
+                hideUploadProgress(true); 
+                showToast('Erro no processamento: ' + error.message, 'error'); 
+            }
+        }
+
+        function formatExcelDate(excelDate) {
+            if (!excelDate) return new Date().toISOString().slice(0, 10);
+            if (typeof excelDate === 'number') return new Date((excelDate - 25569) * 86400 * 1000).toISOString().slice(0, 10);
+            if (typeof excelDate === 'string') {
+                const parts = excelDate.split(/[/.-]/);
+                if (parts.length === 3) {
+                    const day = parts[0].length === 4 ? parts[2] : parts[0]; const month = parts[1];
+                    const year = parts[0].length === 4 ? parts[0] : parts[2];
+                    return `${year.padStart(4, '20')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                }
+            }
+            return new Date().toISOString().slice(0, 10);
+        }
         
         const userModal = new bootstrap.Modal(document.getElementById('userModal'));
         function showUserModal(userId = null) {
@@ -517,11 +717,85 @@
 
         function editUser(userId) { showUserModal(userId); }
         
-        async function deleteUser(userId) { /* ... */ }
+        async function deleteUser(userId) {
+            if (userId === 1) { showToast('Não é possível excluir o admin padrão.', 'error'); return; }
+            if (confirm('Tem certeza?')) {
+                systemUsers = systemUsers.filter(u => u.id !== userId);
+                // Salvar usuários no Firebase
+                await salvarUsuariosFirebase(systemUsers);
+                loadAdmin(); 
+                showToast('Usuário excluído.', 'success');
+            }
+        }
 
-        async function saveUser() { /* ... */ }
+        async function saveUser() {
+            const form = document.getElementById('userForm'), username = document.getElementById('modalUsername').value.trim(), password = document.getElementById('modalPassword').value, role = document.getElementById('modalRole').value, editId = form.dataset.editId;
+            if (!username) { showToast('Nome de usuário é obrigatório.', 'error'); return; }
+            if (systemUsers.find(u => u.username === username && u.id != editId)) { showToast('Nome de usuário já existe.', 'error'); return; }
+
+            if (editId) {
+                const user = systemUsers.find(u => u.id == editId);
+                user.username = username; if (password) user.password = password; user.role = role;
+                showToast('Usuário atualizado.', 'success');
+            } else {
+                if (!password) { showToast('Senha é obrigatória.', 'error'); return; }
+                systemUsers.push({ id: Math.max(0, ...systemUsers.map(u => u.id)) + 1, username, password, role, lastAccess: null });
+                showToast('Usuário criado.', 'success');
+            }
+            
+            // Salvar usuários no Firebase
+            await salvarUsuariosFirebase(systemUsers);
+            
+            userModal.hide(); 
+            loadAdmin();
+        }
         
         document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // <-- CÓDIGO ADICIONADO AQUI -->
+        
+        // Esta função vai no <script> do seu index.html
+        async function salvarDadosNoBanco(event) {
+            event.preventDefault(); // Impede o formulário de recarregar a página
+
+            const dadosParaSalvar = {
+                unidade: document.getElementById('unidadeInput').value,
+                toneladas: parseFloat(document.getElementById('toneladasInput').value)
+            };
+            
+            // Mostra um feedback para o usuário
+            alert('Salvando no banco de dados...');
+
+            try {
+                // **AQUI ESTÁ A CONEXÃO!**
+                // O seu site (frontend) chama a função no servidor (backend)
+                const response = await fetch('/.netlify/functions/salvar-relatorio', {
+                    method: 'POST', // Estamos enviando dados
+                    body: JSON.stringify(dadosParaSalvar) // Converte os dados para texto JSON
+                });
+
+                const resultado = await response.json();
+
+                if (!response.ok) {
+                    // Se o servidor retornou um erro
+                    throw new Error(resultado.error);
+                }
+
+                alert(`Sucesso! Relatório salvo com ID: ${resultado.data.id}`);
+                document.getElementById('formRelatorio').reset(); // Limpa o formulário
+
+            } catch (error) {
+                console.error('Falha ao salvar:', error);
+                alert(`Erro: ${error.message}`);
+            }
+        }
+
+        // Vincule esta função ao seu formulário
+        // ATENÇÃO: O elemento 'formRelatorio' precisa existir no seu HTML para esta linha funcionar.
+        if (document.getElementById('formRelatorio')) {
+            document.getElementById('formRelatorio').addEventListener('submit', salvarDadosNoBanco);
+        }
+
     </script>
 </body>
 </html>
