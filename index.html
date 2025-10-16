@@ -219,14 +219,26 @@
             if (jsonData.length === 0) throw new Error('A planilha do GitHub está vazia.');
 
             // =============================================================================
-            // *** AJUSTE IMPORTANTE PARA CORRIGIR O 'NaN' ***
-            // Nova função auxiliar para ler números no formato brasileiro (com vírgula)
-            const parseNumeroBrasileiro = (valor) => {
+            // *** FUNÇÃO DE LEITURA DE NÚMEROS AINDA MAIS ROBUSTA ***
+            // Esta função agora entende tanto "1.234,56" quanto "1,234.56"
+            const parseRobustNumero = (valor) => {
                 if (valor === null || valor === undefined || valor === '') return 0;
-                // Converte para string, remove pontos de milhar, e troca vírgula por ponto
-                const valorLimpo = String(valor).replace(/\./g, '').replace(',', '.');
-                const numero = parseFloat(valorLimpo);
-                // Se o resultado não for um número (ex: célula com texto), retorna 0
+                
+                let str = String(valor);
+                
+                // Verifica se a vírgula é o último separador, indicando formato brasileiro (1.234,56)
+                const lastComma = str.lastIndexOf(',');
+                const lastPeriod = str.lastIndexOf('.');
+                
+                if (lastComma > lastPeriod) {
+                    // Formato brasileiro: remove pontos e troca vírgula por ponto.
+                    str = str.replace(/\./g, '').replace(',', '.');
+                } else {
+                    // Formato americano ou sem separador de milhar: apenas remove vírgulas.
+                    str = str.replace(/,/g, '');
+                }
+
+                const numero = parseFloat(str);
                 return isNaN(numero) ? 0 : numero;
             };
             // =============================================================================
@@ -246,10 +258,10 @@
                     zona: parseInt(row['Zona']) || 0, 
                     talhao: parseInt(row['Talhão']) || 0,
                     // *** Correção aplicada em todos os campos numéricos ***
-                    entradaCana: parseNumeroBrasileiro(row['Entrada de Cana (t)']), 
-                    atr: parseNumeroBrasileiro(row['ATR (kg/t)']),
-                    raioMedio: parseNumeroBrasileiro(row['Raio Médio (km)']), 
-                    impurezaMineral: parseNumeroBrasileiro(row['Impureza Mineral'])
+                    entradaCana: parseRobustNumero(row['Entrada de Cana (t)']), 
+                    atr: parseRobustNumero(row['ATR (kg/t)']),
+                    raioMedio: parseRobustNumero(row['Raio Médio (km)']), 
+                    impurezaMineral: parseRobustNumero(row['Impureza Mineral'])
                 };
             }).filter(item => item && item.unidade);
 
@@ -264,6 +276,8 @@
             hideLoading();
         }
     }
+
+    // O restante do código permanece o mesmo...
 
     async function salvarUsuariosFirebase(usuarios) { try { await db.collection('configuracao').doc('usuarios').set({ usuarios }); } catch (e) { console.error(e); } }
     async function carregarUsuariosFirebase() { try { const doc = await db.collection('configuracao').doc('usuarios').get(); if (doc.exists && doc.data().usuarios.length > 0) { return doc.data().usuarios; } await salvarUsuariosFirebase(systemUsers); return systemUsers; } catch (e) { console.error(e); return systemUsers; } }
