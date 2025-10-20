@@ -174,6 +174,16 @@
             margin-bottom: 15px;
         }
 
+        .date-range {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-range .form-group {
+            flex: 1;
+        }
+
         .actions {
             display: flex;
             gap: 10px;
@@ -204,6 +214,16 @@
         .results-count {
             font-weight: 600;
             color: var(--dark-color);
+        }
+
+        .total-toneladas {
+            background-color: #e8f5e9;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: var(--success-color);
+            border-left: 4px solid var(--success-color);
         }
 
         .table-container {
@@ -266,6 +286,10 @@
                 grid-template-columns: 1fr;
             }
             
+            .date-range {
+                flex-direction: column;
+            }
+            
             .header {
                 flex-direction: column;
                 gap: 15px;
@@ -274,10 +298,12 @@
             
             .actions {
                 width: 100%;
+                flex-wrap: wrap;
             }
             
             .btn {
                 flex: 1;
+                min-width: 120px;
             }
         }
     </style>
@@ -316,9 +342,15 @@
 
             <div class="filters-container">
                 <div class="filters-grid">
-                    <div class="form-group">
-                        <label for="filterData">Data</label>
-                        <input type="date" id="filterData" class="form-control">
+                    <div class="date-range">
+                        <div class="form-group">
+                            <label for="filterDataInicio">Data Início</label>
+                            <input type="date" id="filterDataInicio" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="filterDataFim">Data Fim</label>
+                            <input type="date" id="filterDataFim" class="form-control">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="filterFrente">Frente</label>
@@ -350,6 +382,10 @@
                     <div class="results-count" id="resultsCount">Total: 0 registros</div>
                 </div>
                 
+                <div class="total-toneladas" id="totalToneladas" style="display: none;">
+                    Total de Toneladas: <span id="toneladasValue">0</span>
+                </div>
+                
                 <div class="loading" id="loadingIndicator">
                     <div class="spinner"></div>
                     <p>Carregando dados...</p>
@@ -364,7 +400,7 @@
                                 <th>Cód. Fazenda</th>
                                 <th>Zona</th>
                                 <th>Talhão</th>
-                                <th>Entrada de Cana</th>
+                                <th>Entrada de Cana (ton)</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
@@ -406,9 +442,12 @@
         const resultsCount = document.getElementById('resultsCount');
         const noResults = document.getElementById('noResults');
         const loadingIndicator = document.getElementById('loadingIndicator');
+        const totalToneladas = document.getElementById('totalToneladas');
+        const toneladasValue = document.getElementById('toneladasValue');
 
         // Filtros
-        const filterData = document.getElementById('filterData');
+        const filterDataInicio = document.getElementById('filterDataInicio');
+        const filterDataFim = document.getElementById('filterDataFim');
         const filterFrente = document.getElementById('filterFrente');
         const filterCodFazenda = document.getElementById('filterCodFazenda');
         const filterZona = document.getElementById('filterZona');
@@ -421,9 +460,6 @@
             searchBtn.addEventListener('click', applyFilters);
             clearBtn.addEventListener('click', clearFilters);
             exportBtn.addEventListener('click', exportToCSV);
-            
-            // Carregar dados do Excel ao iniciar (após login)
-            // Esta função será chamada após o login bem-sucedido
         });
 
         // Função de login
@@ -478,6 +514,7 @@
         function loadExcelData() {
             loadingIndicator.style.display = 'block';
             noResults.style.display = 'none';
+            totalToneladas.style.display = 'none';
             
             // Tentar carregar o arquivo Excel
             fetch('dados.xlsx')
@@ -493,7 +530,38 @@
                     const worksheet = workbook.Sheets[firstSheetName];
                     
                     // Converter para JSON
-                    excelData = XLSX.utils.sheet_to_json(worksheet);
+                    const rawData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    // Processar dados para formatar corretamente
+                    excelData = rawData.map(row => {
+                        // Formatar data corretamente
+                        let dataFormatada = '';
+                        if (row.Data) {
+                            // Se for um número serial do Excel, converter para data
+                            if (typeof row.Data === 'number') {
+                                dataFormatada = XLSX.SSF.parse_date_code(row.Data);
+                                dataFormatada = new Date(dataFormatada.y, dataFormatada.m - 1, dataFormatada.d);
+                            } else if (typeof row.Data === 'string') {
+                                dataFormatada = new Date(row.Data);
+                            } else if (row.Data instanceof Date) {
+                                dataFormatada = row.Data;
+                            }
+                        }
+                        
+                        // Garantir que a entrada de cana seja um número
+                        let entradaCana = 0;
+                        if (row['Entrada de Cana']) {
+                            entradaCana = typeof row['Entrada de Cana'] === 'string' 
+                                ? parseFloat(row['Entrada de Cana'].replace(',', '.')) 
+                                : Number(row['Entrada de Cana']);
+                        }
+                        
+                        return {
+                            ...row,
+                            Data: dataFormatada,
+                            'Entrada de Cana': entradaCana
+                        };
+                    });
                     
                     // Exibir dados na tabela
                     displayData(excelData);
@@ -514,28 +582,51 @@
             if (data.length === 0) {
                 noResults.style.display = 'block';
                 resultsCount.textContent = 'Total: 0 registros';
+                totalToneladas.style.display = 'none';
                 return;
             }
             
             noResults.style.display = 'none';
             resultsCount.textContent = `Total: ${data.length} registros`;
             
+            // Calcular total de toneladas
+            const totalToneladasValor = data.reduce((total, row) => {
+                return total + (row['Entrada de Cana'] || 0);
+            }, 0);
+            
+            toneladasValue.textContent = totalToneladasValor.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            totalToneladas.style.display = 'block';
+            
             data.forEach(row => {
                 const tr = document.createElement('tr');
                 
-                // Formatar data se existir
-                let dataFormatada = row.Data || '';
-                if (dataFormatada && typeof dataFormatada === 'object' && dataFormatada.getDate) {
-                    dataFormatada = dataFormatada.toLocaleDateString('pt-BR');
+                // Formatar data para exibição
+                let dataExibicao = '';
+                if (row.Data && row.Data instanceof Date && !isNaN(row.Data)) {
+                    dataExibicao = row.Data.toLocaleDateString('pt-BR');
+                } else if (row.Data) {
+                    dataExibicao = String(row.Data);
+                }
+                
+                // Formatar entrada de cana para exibição
+                let entradaCanaExibicao = '';
+                if (row['Entrada de Cana'] !== undefined && row['Entrada de Cana'] !== null) {
+                    entradaCanaExibicao = Number(row['Entrada de Cana']).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
                 }
                 
                 tr.innerHTML = `
-                    <td>${dataFormatada}</td>
+                    <td>${dataExibicao}</td>
                     <td>${row.Frente || ''}</td>
                     <td>${row['Cód. Fazenda'] || ''}</td>
                     <td>${row.Zona || ''}</td>
                     <td>${row.Talhão || ''}</td>
-                    <td>${row['Entrada de Cana'] || ''}</td>
+                    <td>${entradaCanaExibicao}</td>
                 `;
                 
                 tableBody.appendChild(tr);
@@ -547,10 +638,24 @@
             if (excelData.length === 0) return;
             
             const filteredData = excelData.filter(row => {
-                // Filtro por data
-                if (filterData.value) {
-                    const rowDate = row.Data ? new Date(row.Data).toISOString().split('T')[0] : '';
-                    if (rowDate !== filterData.value) return false;
+                // Filtro por período de data
+                if (filterDataInicio.value || filterDataFim.value) {
+                    if (!row.Data || !(row.Data instanceof Date) || isNaN(row.Data)) {
+                        return false;
+                    }
+                    
+                    const dataRow = new Date(row.Data);
+                    
+                    if (filterDataInicio.value) {
+                        const dataInicio = new Date(filterDataInicio.value);
+                        if (dataRow < dataInicio) return false;
+                    }
+                    
+                    if (filterDataFim.value) {
+                        const dataFim = new Date(filterDataFim.value);
+                        dataFim.setHours(23, 59, 59, 999); // Fim do dia
+                        if (dataRow > dataFim) return false;
+                    }
                 }
                 
                 // Filtro por frente
@@ -581,7 +686,8 @@
 
         // Limpar filtros
         function clearFilters() {
-            filterData.value = '';
+            filterDataInicio.value = '';
+            filterDataFim.value = '';
             filterFrente.value = '';
             filterCodFazenda.value = '';
             filterZona.value = '';
@@ -608,13 +714,30 @@
             let csvContent = headers.join(',') + '\n';
             
             currentData.forEach(row => {
+                // Formatar data para CSV
+                let dataCSV = '';
+                if (row.Data && row.Data instanceof Date && !isNaN(row.Data)) {
+                    dataCSV = row.Data.toLocaleDateString('pt-BR');
+                } else if (row.Data) {
+                    dataCSV = String(row.Data);
+                }
+                
+                // Formatar entrada de cana para CSV
+                let entradaCanaCSV = '';
+                if (row['Entrada de Cana'] !== undefined && row['Entrada de Cana'] !== null) {
+                    entradaCanaCSV = Number(row['Entrada de Cana']).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                }
+                
                 const values = [
-                    row.Data ? new Date(row.Data).toLocaleDateString('pt-BR') : '',
+                    dataCSV,
                     row.Frente || '',
                     row['Cód. Fazenda'] || '',
                     row.Zona || '',
                     row.Talhão || '',
-                    row['Entrada de Cana'] || ''
+                    entradaCanaCSV
                 ];
                 csvContent += values.join(',') + '\n';
             });
@@ -634,16 +757,30 @@
         // Obter dados filtrados atuais
         function getCurrentFilteredData() {
             // Se não há filtros aplicados, retornar todos os dados
-            if (!filterData.value && !filterFrente.value && !filterCodFazenda.value && 
-                !filterZona.value && !filterTalhao.value) {
+            if (!filterDataInicio.value && !filterDataFim.value && !filterFrente.value && 
+                !filterCodFazenda.value && !filterZona.value && !filterTalhao.value) {
                 return excelData;
             }
             
             // Caso contrário, aplicar os filtros
             return excelData.filter(row => {
-                if (filterData.value) {
-                    const rowDate = row.Data ? new Date(row.Data).toISOString().split('T')[0] : '';
-                    if (rowDate !== filterData.value) return false;
+                if (filterDataInicio.value || filterDataFim.value) {
+                    if (!row.Data || !(row.Data instanceof Date) || isNaN(row.Data)) {
+                        return false;
+                    }
+                    
+                    const dataRow = new Date(row.Data);
+                    
+                    if (filterDataInicio.value) {
+                        const dataInicio = new Date(filterDataInicio.value);
+                        if (dataRow < dataInicio) return false;
+                    }
+                    
+                    if (filterDataFim.value) {
+                        const dataFim = new Date(filterDataFim.value);
+                        dataFim.setHours(23, 59, 59, 999); // Fim do dia
+                        if (dataRow > dataFim) return false;
+                    }
                 }
                 
                 if (filterFrente.value && !String(row.Frente || '').toLowerCase().includes(filterFrente.value.toLowerCase())) {
