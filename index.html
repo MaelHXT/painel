@@ -652,7 +652,7 @@
                 <!-- Mensagem de restrição -->
                 <div class="user-restriction-info" id="userRestrictionInfo" style="display: none;">
                     <i class="fas fa-info-circle"></i>
-                    <strong>Aviso de Restrição:</strong> Seu acesso está limitado às frentes: 92, 94, 70, 80 e 135
+                    <strong>Aviso de Restrição:</strong> Seu acesso está limitado às frentes
                 </div>
                 
                 <!-- Total de Toneladas -->
@@ -700,7 +700,7 @@
         // Dados do sistema com restrições
         const users = [
             { 
-                username: 'Ismael', 
+                username: 'ismael', 
                 password: '~140819i', 
                 type: 'admin',
                 restricted: false,
@@ -717,8 +717,8 @@
                 username: 'felipe', 
                 password: 'felipe123', 
                 type: 'user',
-                restricted: false,
-                allowedFronts: []
+                restricted: true,
+                allowedFronts: ['155', '156', '149', '153', '158']
             }
         ];
 
@@ -852,7 +852,7 @@
             weatherLastUpdate.textContent = `Atualizado: ${new Date().toLocaleString('pt-BR')}`;
         }
 
-        // Carregar dados do Excel - SISTEMA ROBUSTO
+        // CARREGAR DADOS DO EXCEL - VERSÃO CORRIGIDA E FUNCIONAL
         function loadExcelData() {
             loadingIndicator.style.display = 'block';
             noResults.style.display = 'none';
@@ -870,51 +870,83 @@
                         const workbook = XLSX.read(data, { 
                             type: 'array',
                             cellDates: true,
-                            cellStyles: true
+                            cellText: false
                         });
                         
                         const firstSheetName = workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[firstSheetName];
                         
-                        // Converter para JSON com tratamento robusto
+                        // DEBUG: Verificar cabeçalhos
+                        const range = XLSX.utils.decode_range(worksheet['!ref']);
+                        const headers = [];
+                        for (let C = range.s.c; C <= range.e.c; ++C) {
+                            const cell = worksheet[XLSX.utils.encode_cell({r: 0, c: C})];
+                            headers.push(cell ? cell.v : `Coluna ${C}`);
+                        }
+                        console.log('Cabeçalhos encontrados:', headers);
+                        
+                        // Converter para JSON mantendo valores brutos
                         const rawData = XLSX.utils.sheet_to_json(worksheet, {
-                            raw: false,
-                            defval: '',
-                            dateNF: 'dd/mm/yyyy'
+                            raw: true, // Manter valores brutos
+                            defval: null
                         });
                         
-                        // Processamento robusto dos dados
+                        console.log('Dados brutos carregados:', rawData);
+                        
+                        // PROCESSAMENTO CORRETO DOS DADOS
                         excelData = rawData.map((row, index) => {
-                            // Normalizar nomes de colunas
-                            const normalizedRow = {};
-                            Object.keys(row).forEach(key => {
-                                const normalizedKey = key.trim().toLowerCase();
-                                normalizedRow[normalizedKey] = row[key];
+                            // Encontrar as colunas corretas pelos nomes exatos
+                            const dataValue = row['Data'] || row['DATA'] || row['data'];
+                            const frenteValue = row['Frente'] || row['FRENTE'] || row['frente'];
+                            const codFazendaValue = row['Cód. Fazenda'] || row['Cód Fazenda'] || row['Cód_Fazenda'] || row['CodFazenda'];
+                            const zonaValue = row['Zona'] || row['ZONA'] || row['zona'];
+                            const talhaoValue = row['Talhão'] || row['TALHÃO'] || row['talhão'] || row['Talhao'] || row['TALHAO'];
+                            const entradaCanaValue = row['Entrada de Cana (t)'] || row['Entrada de Cana'] || row['Entrada_de_Cana'] || row['EntradaCana'];
+                            
+                            console.log(`Linha ${index + 1}:`, {
+                                data: dataValue,
+                                frente: frenteValue,
+                                codFazenda: codFazendaValue,
+                                zona: zonaValue,
+                                talhao: talhaoValue,
+                                entradaCana: entradaCanaValue
                             });
                             
                             // Processar data
-                            let dataProcessada = processarData(normalizedRow.data || normalizedRow.date);
+                            const dataProcessada = processarData(dataValue);
                             
-                            // Processar entrada de cana
-                            let entradaCana = processarEntradaCana(normalizedRow);
+                            // Processar entrada de cana - CORREÇÃO PRINCIPAL
+                            let entradaCana = 0;
+                            if (entradaCanaValue !== undefined && entradaCanaValue !== null) {
+                                if (typeof entradaCanaValue === 'number') {
+                                    entradaCana = entradaCanaValue;
+                                } else if (typeof entradaCanaValue === 'string') {
+                                    // Limpar e converter string para número
+                                    const cleaned = entradaCanaValue
+                                        .replace(/[^\d,.-]/g, '')
+                                        .replace(',', '.');
+                                    entradaCana = parseFloat(cleaned) || 0;
+                                }
+                            }
                             
                             return {
                                 Data: dataProcessada,
-                                Frente: String(normalizedRow.frente || ''),
-                                'Cód. Fazenda': String(normalizedRow['cód. fazenda'] || normalizedRow.codfazenda || ''),
-                                Zona: String(normalizedRow.zona || ''),
-                                Talhão: String(normalizedRow.talhão || normalizedRow.talhao || ''),
+                                Frente: String(frenteValue || ''),
+                                'Cód. Fazenda': String(codFazendaValue || ''),
+                                Zona: String(zonaValue || ''),
+                                Talhão: String(talhaoValue || ''),
                                 'Entrada de Cana': entradaCana,
                                 _raw: row // Manter dados brutos para debug
                             };
                         });
                         
-                        console.log('Dados processados com sucesso:', excelData.length, 'registros');
+                        console.log('Dados processados com sucesso:', excelData);
                         
                         // Aplicar restrições
                         applyUserRestrictions();
                         
                     } catch (error) {
+                        console.error('Erro no processamento:', error);
                         throw new Error(`Erro no processamento dos dados: ${error.message}`);
                     }
                 })
@@ -927,17 +959,15 @@
                 });
         }
 
-        // Processar data robustamente
+        // Processar data
         function processarData(data) {
             if (!data) return null;
             
             try {
-                // Se já é um objeto Date
                 if (data instanceof Date) {
                     return isNaN(data.getTime()) ? null : data;
                 }
                 
-                // Se é string
                 if (typeof data === 'string') {
                     // Tentar formato dd/mm/aaaa
                     const matchBR = data.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -953,12 +983,10 @@
                         return new Date(ano, mes - 1, dia);
                     }
                     
-                    // Tentar parse direto
                     const parsed = new Date(data);
                     return isNaN(parsed.getTime()) ? null : parsed;
                 }
                 
-                // Se é número (serial do Excel)
                 if (typeof data === 'number') {
                     const date = new Date((data - 25569) * 86400 * 1000);
                     return isNaN(date.getTime()) ? null : date;
@@ -969,37 +997,6 @@
                 console.warn('Erro ao processar data:', data, error);
                 return null;
             }
-        }
-
-        // Processar entrada de cana robustamente
-        function processarEntradaCana(row) {
-            const possibleKeys = [
-                'entrada de cana', 'entradadecana', 'cana', 'toneladas', 
-                'ton', 'entrada', 'quantidade', 'peso'
-            ];
-            
-            for (const key of possibleKeys) {
-                if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
-                    const value = row[key];
-                    
-                    // Se é número
-                    if (typeof value === 'number') {
-                        return Math.max(0, value);
-                    }
-                    
-                    // Se é string
-                    if (typeof value === 'string') {
-                        const cleaned = value
-                            .replace(/[^\d,.-]/g, '')
-                            .replace(',', '.');
-                        
-                        const parsed = parseFloat(cleaned);
-                        return isNaN(parsed) ? 0 : Math.max(0, parsed);
-                    }
-                }
-            }
-            
-            return 0;
         }
 
         // Aplicar restrições de usuário
@@ -1056,6 +1053,8 @@
             const totalToneladasValor = data.reduce((total, row) => 
                 total + (row['Entrada de Cana'] || 0), 0
             );
+            
+            console.log('Total de toneladas calculado:', totalToneladasValor);
             
             toneladasValue.textContent = totalToneladasValor.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
@@ -1192,7 +1191,6 @@
                 .some(input => input.value);
             
             return hasFilters ? filteredData.filter(row => {
-                // Aplicar mesma lógica de filtro do applyFilters
                 if (filterDataInicio.value || filterDataFim.value) {
                     if (!row.Data || isNaN(row.Data.getTime())) return false;
                     
