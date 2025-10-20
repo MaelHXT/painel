@@ -3,40 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Consulta - Entrada de Cana</title>
+    <title>AgroCan - Sistema de Consulta de Cana</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #2980b9;
-            --light-color: #ecf0f1;
-            --dark-color: #34495e;
-            --success-color: #27ae60;
-            --warning-color: #e74c3c;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s ease;
+            --primary-blue: #1e40af;
+            --secondary-blue: #3b82f6;
+            --light-blue: #dbeafe;
+            --accent-blue: #60a5fa;
+            --success-green: #10b981;
+            --light-green: #d1fae5;
+            --warning-orange: #f59e0b;
+            --white: #ffffff;
+            --light-gray: #f8fafc;
+            --medium-gray: #e2e8f0;
+            --dark-gray: #64748b;
+            --text-dark: #1e293b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --border-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
         body {
-            background-color: #f5f7fa;
-            color: #333;
+            background: linear-gradient(135deg, var(--light-blue) 0%, var(--white) 100%);
+            color: var(--text-dark);
             line-height: 1.6;
             min-height: 100vh;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 15px;
+            padding: 20px;
         }
 
         /* Tela de Login */
@@ -45,72 +52,94 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--success-green) 100%);
             padding: 20px;
         }
 
         .login-box {
-            background: white;
-            padding: 30px;
+            background: var(--white);
+            padding: 40px;
             border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
+            box-shadow: var(--shadow-lg);
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
         }
 
-        .login-box h1 {
-            margin-bottom: 25px;
-            color: var(--primary-color);
-            font-size: 24px;
+        .login-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--success-green));
+        }
+
+        .login-logo {
+            margin-bottom: 30px;
+        }
+
+        .login-logo i {
+            font-size: 3rem;
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+
+        .login-logo h1 {
+            font-size: 1.8rem;
+            color: var(--primary-blue);
+            font-weight: 700;
+        }
+
+        .login-logo p {
+            color: var(--dark-gray);
+            font-size: 0.9rem;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             text-align: left;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             font-weight: 600;
-            color: var(--dark-color);
+            color: var(--text-dark);
             font-size: 14px;
         }
 
         .form-control {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            font-size: 14px;
+            padding: 14px 16px;
+            border: 2px solid var(--medium-gray);
+            border-radius: 8px;
+            font-size: 15px;
             transition: var(--transition);
+            background: var(--white);
         }
 
         .form-control:focus {
             outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-        }
-
-        .form-control:disabled {
-            background-color: #f8f9fa;
-            color: #6c757d;
-            cursor: not-allowed;
+            border-color: var(--secondary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 10px 16px;
-            background-color: var(--secondary-color);
-            color: white;
+            gap: 8px;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            color: var(--white);
             border: none;
-            border-radius: var(--border-radius);
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             transition: var(--transition);
             text-align: center;
@@ -118,19 +147,31 @@
         }
 
         .btn:hover {
-            background-color: var(--accent-color);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
         }
 
         .btn-block {
             width: 100%;
         }
 
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-green), #34d399);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-orange), #fbbf24);
+        }
+
         .error-message {
-            color: var(--warning-color);
+            color: #ef4444;
             margin-top: 10px;
             font-size: 13px;
             display: none;
+            background: #fef2f2;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #ef4444;
         }
 
         /* Painel Principal */
@@ -138,80 +179,144 @@
             display: none;
         }
 
+        /* Header */
         .header {
-            background-color: white;
-            padding: 15px 20px;
+            background: var(--white);
+            padding: 20px 30px;
             border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
+            gap: 20px;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
             gap: 15px;
         }
 
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-logo i {
+            font-size: 2rem;
+            color: var(--primary-blue);
+        }
+
         .header h1 {
-            font-size: 1.4rem;
-            color: var(--primary-color);
+            font-size: 1.6rem;
+            color: var(--primary-blue);
+            font-weight: 700;
         }
 
         .user-info {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
             flex-wrap: wrap;
         }
 
         .user-badge {
-            background-color: var(--success-color);
-            color: white;
-            padding: 4px 8px;
+            background: var(--success-green);
+            color: var(--white);
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
         }
 
         .user-restriction {
-            background-color: #f39c12;
-            color: white;
-            padding: 4px 8px;
+            background: var(--warning-orange);
+            color: var(--white);
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
         }
 
-        .logout-btn {
-            background-color: var(--warning-color);
-            font-size: 13px;
-        }
-
-        .logout-btn:hover {
-            background-color: #c0392b;
-        }
-
-        .filters-container {
-            background-color: white;
+        /* Widget do Tempo */
+        .weather-widget {
+            background: linear-gradient(135deg, var(--secondary-blue), var(--primary-blue));
+            color: var(--white);
             padding: 20px;
             border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
         }
 
-        /* LAYOUT CORRIGIDO DOS FILTROS */
-        .filters-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
+        .weather-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
             margin-bottom: 15px;
         }
 
-        /* Container especial para datas - OCUPA LINHA INTEIRA */
+        .weather-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+        }
+
+        .weather-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .weather-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .weather-item i {
+            font-size: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .weather-info h4 {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 4px;
+        }
+
+        .weather-info .value {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        /* Filtros */
+        .filters-container {
+            background: var(--white);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
         .date-range-container {
             grid-column: 1 / -1;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 15px;
         }
 
         .date-range-container .form-group {
@@ -220,23 +325,16 @@
 
         .actions {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
-        .btn-secondary {
-            background-color: #95a5a6;
-        }
-
-        .btn-secondary:hover {
-            background-color: #7f8c8d;
-        }
-
+        /* Resultados */
         .results-container {
-            background-color: white;
-            padding: 20px;
+            background: var(--white);
+            padding: 25px;
             border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
+            box-shadow: var(--shadow);
         }
 
         .results-header {
@@ -244,93 +342,106 @@
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             gap: 15px;
         }
 
         .results-count {
             font-weight: 600;
-            color: var(--dark-color);
-            font-size: 14px;
+            color: var(--text-dark);
+            font-size: 15px;
+            background: var(--light-gray);
+            padding: 8px 16px;
+            border-radius: 20px;
         }
 
         .total-toneladas {
-            background-color: #e8f5e9;
-            padding: 12px 15px;
+            background: var(--light-green);
+            padding: 16px 20px;
             border-radius: var(--border-radius);
-            margin-bottom: 15px;
-            font-weight: 600;
-            color: var(--success-color);
-            border-left: 4px solid var(--success-color);
+            margin-bottom: 20px;
+            font-weight: 700;
+            color: var(--success-green);
+            border-left: 4px solid var(--success-green);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 14px;
+            font-size: 15px;
         }
 
         .user-restriction-info {
-            background-color: #fff3cd;
-            padding: 10px 15px;
+            background: #fffbeb;
+            padding: 15px 20px;
             border-radius: var(--border-radius);
-            margin-bottom: 15px;
-            border-left: 4px solid #ffc107;
-            font-size: 13px;
-            color: #856404;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--warning-orange);
+            font-size: 14px;
+            color: #92400e;
         }
 
         .table-container {
             overflow-x: auto;
             border-radius: var(--border-radius);
-            border: 1px solid #eee;
+            border: 1px solid var(--medium-gray);
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 600px;
+            min-width: 800px;
         }
 
         .data-table th,
         .data-table td {
-            padding: 10px 12px;
+            padding: 14px 16px;
             text-align: left;
-            border-bottom: 1px solid #eee;
-            font-size: 13px;
+            border-bottom: 1px solid var(--medium-gray);
+            font-size: 14px;
         }
 
         .data-table th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            color: var(--dark-color);
+            background: var(--light-blue);
+            font-weight: 700;
+            color: var(--primary-blue);
             position: sticky;
             top: 0;
             white-space: nowrap;
         }
 
         .data-table tr:hover {
-            background-color: #f8f9fa;
+            background: var(--light-gray);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
         }
 
         .no-results {
             text-align: center;
-            padding: 30px;
-            color: #7f8c8d;
+            padding: 40px;
+            color: var(--dark-gray);
+        }
+
+        .no-results i {
+            font-size: 3rem;
+            color: var(--medium-gray);
+            margin-bottom: 15px;
         }
 
         .loading {
             display: none;
             text-align: center;
-            padding: 20px;
+            padding: 40px;
         }
 
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: var(--secondary-color);
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-left-color: var(--secondary-blue);
             border-radius: 50%;
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin: 0 auto 15px;
         }
 
         @keyframes spin {
@@ -339,41 +450,44 @@
             }
         }
 
-        /* RESPONSIVIDADE CORRIGIDA */
+        /* Responsividade */
         @media (max-width: 1024px) {
             .filters-grid {
-                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            }
+            
+            .weather-content {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             }
         }
 
         @media (max-width: 768px) {
             .container {
-                padding: 10px;
-            }
-            
-            .filters-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-            }
-            
-            .date-range-container {
-                grid-column: 1 / -1;
-                grid-template-columns: 1fr 1fr;
+                padding: 15px;
             }
             
             .header {
                 flex-direction: column;
                 align-items: flex-start;
-                padding: 15px;
+                padding: 20px;
             }
             
-            .header h1 {
-                font-size: 1.2rem;
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
             }
             
             .user-info {
                 width: 100%;
                 justify-content: space-between;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .date-range-container {
+                grid-template-columns: 1fr;
             }
             
             .actions {
@@ -382,71 +496,33 @@
             
             .btn {
                 flex: 1;
-                min-width: 110px;
-                font-size: 13px;
-                padding: 8px 12px;
+                min-width: 120px;
             }
             
-            .filters-container,
-            .results-container {
-                padding: 15px;
-            }
-            
-            .data-table th,
-            .data-table td {
-                padding: 8px 10px;
-                font-size: 12px;
-            }
-            
-            .login-box {
-                padding: 20px 15px;
+            .weather-content {
+                grid-template-columns: 1fr;
             }
         }
 
         @media (max-width: 480px) {
+            .login-box {
+                padding: 30px 20px;
+            }
+            
             .header h1 {
-                font-size: 1.1rem;
-            }
-            
-            .filters-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .date-range-container {
-                grid-template-columns: 1fr;
+                font-size: 1.3rem;
             }
             
             .btn {
                 min-width: 100px;
-                font-size: 12px;
-                padding: 8px 10px;
+                font-size: 14px;
+                padding: 12px 16px;
             }
             
             .total-toneladas {
                 flex-direction: column;
-                gap: 5px;
+                gap: 8px;
                 text-align: center;
-                font-size: 13px;
-                padding: 10px;
-            }
-            
-            .form-group label {
-                font-size: 13px;
-            }
-            
-            .form-control {
-                padding: 8px 10px;
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .actions {
-                flex-direction: column;
-            }
-            
-            .btn {
-                width: 100%;
             }
         }
     </style>
@@ -455,18 +531,28 @@
     <!-- Tela de Login -->
     <div class="login-container" id="loginScreen">
         <div class="login-box">
-            <h1>Sistema de Consulta</h1>
+            <div class="login-logo">
+                <i class="fas fa-seedling"></i>
+                <h1>AgroCan</h1>
+                <p>Sistema de Gestão de Cana-de-Açúcar</p>
+            </div>
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="username">Usuário</label>
-                    <input type="text" id="username" class="form-control" required>
+                    <label for="username"><i class="fas fa-user"></i> Usuário</label>
+                    <input type="text" id="username" class="form-control" placeholder="Digite seu usuário" required>
                 </div>
                 <div class="form-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" class="form-control" required>
+                    <label for="password"><i class="fas fa-lock"></i> Senha</label>
+                    <input type="password" id="password" class="form-control" placeholder="Digite sua senha" required>
                 </div>
-                <button type="submit" class="btn btn-block">Entrar</button>
-                <div class="error-message" id="loginError">Usuário ou senha incorretos</div>
+                <button type="submit" class="btn btn-block">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Entrar no Sistema
+                </button>
+                <div class="error-message" id="loginError">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Usuário ou senha incorretos
+                </div>
             </form>
         </div>
     </div>
@@ -474,95 +560,124 @@
     <!-- Painel Principal -->
     <div class="dashboard" id="dashboard">
         <div class="container">
+            <!-- Header -->
             <div class="header">
-                <h1>Relatórios de Entrada de Cana-de-Açúcar</h1>
+                <div class="header-content">
+                    <div class="header-logo">
+                        <i class="fas fa-seedling"></i>
+                        <h1>AgroCan - Relatórios de Entrada</h1>
+                    </div>
+                </div>
                 <div class="user-info">
                     <span id="userDisplay">Usuário</span>
-                    <span class="user-badge" id="userBadge" style="display: none;">Administrador</span>
-                    <span class="user-restriction" id="userRestriction" style="display: none;">Acesso Restrito</span>
-                    <button class="btn logout-btn" id="logoutBtn">Sair</button>
+                    <span class="user-badge" id="userBadge" style="display: none;">
+                        <i class="fas fa-shield-alt"></i> Administrador
+                    </span>
+                    <span class="user-restriction" id="userRestriction" style="display: none;">
+                        <i class="fas fa-lock"></i> Acesso Restrito
+                    </span>
+                    <button class="btn btn-warning" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </button>
                 </div>
             </div>
 
+            <!-- Widget do Tempo -->
+            <div class="weather-widget" id="weatherWidget">
+                <div class="weather-header">
+                    <h3><i class="fas fa-cloud-sun"></i> Condições Meteorológicas - IPMet</h3>
+                    <span id="weatherLastUpdate"></span>
+                </div>
+                <div class="weather-content" id="weatherContent">
+                    <!-- Dados do tempo serão carregados aqui -->
+                </div>
+            </div>
+
+            <!-- Filtros -->
             <div class="filters-container">
                 <div class="filters-grid">
-                    <!-- DATAS EM LINHA SEPARADA -->
                     <div class="date-range-container">
                         <div class="form-group">
-                            <label for="filterDataInicio">Data Início</label>
+                            <label for="filterDataInicio"><i class="fas fa-calendar-alt"></i> Data Início</label>
                             <input type="date" id="filterDataInicio" class="form-control">
                         </div>
                         <div class="form-group">
-                            <label for="filterDataFim">Data Fim</label>
+                            <label for="filterDataFim"><i class="fas fa-calendar-alt"></i> Data Fim</label>
                             <input type="date" id="filterDataFim" class="form-control">
                         </div>
                     </div>
                     
-                    <!-- DEMAIS FILTROS -->
                     <div class="form-group">
-                        <label for="filterFrente">Frente</label>
-                        <input type="text" id="filterFrente" class="form-control" placeholder="Frente">
+                        <label for="filterFrente"><i class="fas fa-tractor"></i> Frente</label>
+                        <input type="text" id="filterFrente" class="form-control" placeholder="Número da frente">
                     </div>
                     <div class="form-group">
-                        <label for="filterCodFazenda">Cód. Fazenda</label>
-                        <input type="text" id="filterCodFazenda" class="form-control" placeholder="Cód. Fazenda">
+                        <label for="filterCodFazenda"><i class="fas fa-map-marker-alt"></i> Cód. Fazenda</label>
+                        <input type="text" id="filterCodFazenda" class="form-control" placeholder="Código da fazenda">
                     </div>
                     <div class="form-group">
-                        <label for="filterZona">Zona</label>
+                        <label for="filterZona"><i class="fas fa-map"></i> Zona</label>
                         <input type="text" id="filterZona" class="form-control" placeholder="Zona">
                     </div>
                     <div class="form-group">
-                        <label for="filterTalhao">Talhão</label>
+                        <label for="filterTalhao"><i class="fas fa-border-all"></i> Talhão</label>
                         <input type="text" id="filterTalhao" class="form-control" placeholder="Talhão">
                     </div>
                 </div>
                 <div class="actions">
                     <button class="btn" id="searchBtn">
-                        <span>🔍</span>
-                        <span>Pesquisar</span>
+                        <i class="fas fa-search"></i>
+                        Pesquisar
                     </button>
-                    <button class="btn btn-secondary" id="clearBtn">
-                        <span>🔄</span>
-                        <span>Limpar Filtros</span>
+                    <button class="btn btn-success" id="clearBtn">
+                        <i class="fas fa-broom"></i>
+                        Limpar Filtros
                     </button>
-                    <button class="btn btn-secondary" id="exportBtn">
-                        <span>📥</span>
-                        <span>Exportar CSV</span>
+                    <button class="btn btn-warning" id="exportBtn">
+                        <i class="fas fa-file-export"></i>
+                        Exportar CSV
                     </button>
                 </div>
             </div>
 
+            <!-- Resultados -->
             <div class="results-container">
                 <div class="results-header">
-                    <h2>Resultados</h2>
-                    <div class="results-count" id="resultsCount">Total: 0 registros</div>
+                    <h2><i class="fas fa-table"></i> Resultados da Consulta</h2>
+                    <div class="results-count" id="resultsCount">
+                        <i class="fas fa-chart-bar"></i> Total: 0 registros
+                    </div>
                 </div>
                 
-                <!-- Mensagem de restrição para usuário dgagro -->
+                <!-- Mensagem de restrição -->
                 <div class="user-restriction-info" id="userRestrictionInfo" style="display: none;">
-                    <strong>Aviso:</strong> Seu acesso está limitado às frentes: 92, 94, 70, 80 e 135
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Aviso de Restrição:</strong> Seu acesso está limitado às frentes: 92, 94, 70, 80 e 135
                 </div>
                 
+                <!-- Total de Toneladas -->
                 <div class="total-toneladas" id="totalToneladas" style="display: none;">
-                    <span>Total de Toneladas:</span>
+                    <span><i class="fas fa-weight-hanging"></i> Total de Toneladas Processadas:</span>
                     <span id="toneladasValue">0,00</span>
                 </div>
                 
+                <!-- Loading -->
                 <div class="loading" id="loadingIndicator">
                     <div class="spinner"></div>
-                    <p>Carregando dados...</p>
+                    <p>Processando dados...</p>
                 </div>
                 
+                <!-- Tabela de Resultados -->
                 <div class="table-container">
                     <table class="data-table" id="resultsTable">
                         <thead>
                             <tr>
-                                <th>Data</th>
-                                <th>Frente</th>
-                                <th>Cód. Fazenda</th>
-                                <th>Zona</th>
-                                <th>Talhão</th>
-                                <th>Entrada de Cana (ton)</th>
+                                <th><i class="fas fa-calendar"></i> Data</th>
+                                <th><i class="fas fa-tractor"></i> Frente</th>
+                                <th><i class="fas fa-map-marker-alt"></i> Cód. Fazenda</th>
+                                <th><i class="fas fa-map"></i> Zona</th>
+                                <th><i class="fas fa-border-all"></i> Talhão</th>
+                                <th><i class="fas fa-weight-hanging"></i> Entrada de Cana (ton)</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
@@ -571,8 +686,11 @@
                     </table>
                 </div>
                 
+                <!-- Sem Resultados -->
                 <div class="no-results" id="noResults" style="display: none;">
-                    <p>Nenhum resultado encontrado para os filtros aplicados.</p>
+                    <i class="fas fa-inbox"></i>
+                    <h3>Nenhum resultado encontrado</h3>
+                    <p>Verifique os filtros aplicados ou tente ajustar os critérios de pesquisa.</p>
                 </div>
             </div>
         </div>
@@ -586,21 +704,21 @@
                 password: '~140819i', 
                 type: 'admin',
                 restricted: false,
-                allowedFronts: [] // Array vazio = acesso total
+                allowedFronts: []
             },
             { 
                 username: 'dgagro', 
                 password: 'dgagro123', 
                 type: 'user',
                 restricted: true,
-                allowedFronts: ['92', '94', '70', '80', '135'] // Frentes permitidas
+                allowedFronts: ['92', '94', '70', '80', '135']
             },
             { 
                 username: 'felipe', 
                 password: 'felipe123', 
                 type: 'user',
                 restricted: false,
-                allowedFronts: [] // Array vazio = acesso total
+                allowedFronts: []
             }
         ];
 
@@ -627,6 +745,9 @@
         const loadingIndicator = document.getElementById('loadingIndicator');
         const totalToneladas = document.getElementById('totalToneladas');
         const toneladasValue = document.getElementById('toneladasValue');
+        const weatherWidget = document.getElementById('weatherWidget');
+        const weatherContent = document.getElementById('weatherContent');
+        const weatherLastUpdate = document.getElementById('weatherLastUpdate');
 
         // Filtros
         const filterDataInicio = document.getElementById('filterDataInicio');
@@ -643,16 +764,22 @@
             searchBtn.addEventListener('click', applyFilters);
             clearBtn.addEventListener('click', clearFilters);
             exportBtn.addEventListener('click', exportToCSV);
+            
+            // Carregar dados do tempo
+            loadWeatherData();
         });
 
         // Função de login
         function handleLogin(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             
-            const user = users.find(u => u.username === username && u.password === password);
+            const user = users.find(u => 
+                u.username.toLowerCase() === username.toLowerCase() && 
+                u.password === password
+            );
             
             if (user) {
                 currentUser = user;
@@ -683,7 +810,6 @@
             loginScreen.style.display = 'none';
             dashboard.style.display = 'block';
             
-            // Atualizar informações do usuário
             userDisplay.textContent = currentUser.username;
             
             if (currentUser.type === 'admin') {
@@ -693,7 +819,6 @@
             } else {
                 userBadge.style.display = 'none';
                 
-                // Verificar se é usuário restrito
                 if (currentUser.restricted) {
                     userRestriction.style.display = 'inline-block';
                     userRestrictionInfo.style.display = 'block';
@@ -704,7 +829,30 @@
             }
         }
 
-        // Carregar dados do Excel - VERSÃO CORRIGIDA
+        // Carregar dados do tempo (simulação - IPMet)
+        function loadWeatherData() {
+            const weatherConditions = [
+                { icon: 'fa-temperature-high', label: 'Temperatura', value: '28°C' },
+                { icon: 'fa-tint', label: 'Umidade', value: '65%' },
+                { icon: 'fa-wind', label: 'Veloc. Vento', value: '12 km/h' },
+                { icon: 'fa-cloud', label: 'Precipitação', value: '0 mm' },
+                { icon: 'fa-sun', label: 'Índice UV', value: 'Moderado' }
+            ];
+            
+            weatherContent.innerHTML = weatherConditions.map(condition => `
+                <div class="weather-item">
+                    <i class="fas ${condition.icon}"></i>
+                    <div class="weather-info">
+                        <h4>${condition.label}</h4>
+                        <div class="value">${condition.value}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            weatherLastUpdate.textContent = `Atualizado: ${new Date().toLocaleString('pt-BR')}`;
+        }
+
+        // Carregar dados do Excel - SISTEMA ROBUSTO
         function loadExcelData() {
             loadingIndicator.style.display = 'block';
             noResults.style.display = 'none';
@@ -713,127 +861,164 @@
             fetch('dados.xlsx')
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Arquivo Excel não encontrado');
+                        throw new Error('Arquivo Excel não encontrado no servidor');
                     }
                     return response.arrayBuffer();
                 })
                 .then(data => {
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    
-                    // DEBUG: Verificar estrutura da planilha
-                    console.log('Estrutura da planilha:', XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0]);
-                    
-                    // Converter para JSON mantendo valores brutos
-                    const rawData = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    // DEBUG: Verificar primeiros registros
-                    console.log('Primeiros registros brutos:', rawData.slice(0, 3));
-                    
-                    // Processar dados para formatar corretamente
-                    excelData = rawData.map(row => {
-                        // FORMATAR DATA CORRIGIDO
-                        let dataFormatada = null;
-                        if (row.Data) {
-                            if (typeof row.Data === 'string') {
-                                // Se é string no formato dd/mm/aaaa
-                                const partes = row.Data.split('/');
-                                if (partes.length === 3) {
-                                    dataFormatada = new Date(partes[2], partes[1] - 1, partes[0]);
-                                } else {
-                                    // Tentar parse como data normal
-                                    dataFormatada = new Date(row.Data);
-                                }
-                            } else if (typeof row.Data === 'number') {
-                                // Número serial do Excel - correção de fuso
-                                const excelDate = row.Data;
-                                const date = new Date((excelDate - 25569) * 86400 * 1000);
-                                // Compensar fuso horário
-                                const offset = date.getTimezoneOffset() * 60000;
-                                dataFormatada = new Date(date.getTime() + offset);
-                            } else if (row.Data instanceof Date) {
-                                dataFormatada = row.Data;
-                            }
-                        }
+                    try {
+                        const workbook = XLSX.read(data, { 
+                            type: 'array',
+                            cellDates: true,
+                            cellStyles: true
+                        });
                         
-                        // TRATAMENTO CORRIGIDO PARA ENTRADA DE CANA
-                        let entradaCana = 0;
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
                         
-                        // Buscar a coluna de entrada de cana por diferentes nomes possíveis
-                        const entradaCanaKey = Object.keys(row).find(key => 
-                            key.toLowerCase().includes('entrada') || 
-                            key.toLowerCase().includes('cana') ||
-                            key.toLowerCase().includes('ton') ||
-                            key.toLowerCase().includes('tonelada')
-                        );
+                        // Converter para JSON com tratamento robusto
+                        const rawData = XLSX.utils.sheet_to_json(worksheet, {
+                            raw: false,
+                            defval: '',
+                            dateNF: 'dd/mm/yyyy'
+                        });
                         
-                        console.log('Chave encontrada para entrada de cana:', entradaCanaKey);
-                        
-                        if (entradaCanaKey && row[entradaCanaKey] !== undefined && row[entradaCanaKey] !== null) {
-                            const valor = row[entradaCanaKey];
-                            console.log('Valor bruto da entrada de cana:', valor, 'Tipo:', typeof valor);
+                        // Processamento robusto dos dados
+                        excelData = rawData.map((row, index) => {
+                            // Normalizar nomes de colunas
+                            const normalizedRow = {};
+                            Object.keys(row).forEach(key => {
+                                const normalizedKey = key.trim().toLowerCase();
+                                normalizedRow[normalizedKey] = row[key];
+                            });
                             
-                            if (typeof valor === 'string') {
-                                // Remover caracteres não numéricos exceto ponto, vírgula e negativo
-                                const valorLimpo = valor
-                                    .replace(/[^\d,-.]/g, '')
-                                    .replace(',', '.');
-                                entradaCana = parseFloat(valorLimpo) || 0;
-                            } else if (typeof valor === 'number') {
-                                entradaCana = valor;
-                            }
-                        }
+                            // Processar data
+                            let dataProcessada = processarData(normalizedRow.data || normalizedRow.date);
+                            
+                            // Processar entrada de cana
+                            let entradaCana = processarEntradaCana(normalizedRow);
+                            
+                            return {
+                                Data: dataProcessada,
+                                Frente: String(normalizedRow.frente || ''),
+                                'Cód. Fazenda': String(normalizedRow['cód. fazenda'] || normalizedRow.codfazenda || ''),
+                                Zona: String(normalizedRow.zona || ''),
+                                Talhão: String(normalizedRow.talhão || normalizedRow.talhao || ''),
+                                'Entrada de Cana': entradaCana,
+                                _raw: row // Manter dados brutos para debug
+                            };
+                        });
                         
-                        console.log('Entrada de cana processada:', entradaCana);
+                        console.log('Dados processados com sucesso:', excelData.length, 'registros');
                         
-                        return {
-                            Data: dataFormatada,
-                            Frente: String(row.Frente || ''),
-                            'Cód. Fazenda': row['Cód. Fazenda'] || '',
-                            Zona: row.Zona || '',
-                            Talhão: row.Talhão || '',
-                            'Entrada de Cana': entradaCana
-                        };
-                    });
-                    
-                    // DEBUG: Verificar dados processados
-                    console.log('Dados processados:', excelData.slice(0, 3));
-                    
-                    // Aplicar restrição de frentes para usuário dgagro
-                    applyUserRestrictions();
-                    loadingIndicator.style.display = 'none';
+                        // Aplicar restrições
+                        applyUserRestrictions();
+                        
+                    } catch (error) {
+                        throw new Error(`Erro no processamento dos dados: ${error.message}`);
+                    }
                 })
                 .catch(error => {
-                    console.error('Erro ao carregar dados:', error);
+                    console.error('Erro crítico:', error);
+                    showError(`Falha no carregamento: ${error.message}`);
+                })
+                .finally(() => {
                     loadingIndicator.style.display = 'none';
-                    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #e74c3c;">${error.message}</td></tr>`;
-                    resultsCount.textContent = 'Total: 0 registros';
                 });
+        }
+
+        // Processar data robustamente
+        function processarData(data) {
+            if (!data) return null;
+            
+            try {
+                // Se já é um objeto Date
+                if (data instanceof Date) {
+                    return isNaN(data.getTime()) ? null : data;
+                }
+                
+                // Se é string
+                if (typeof data === 'string') {
+                    // Tentar formato dd/mm/aaaa
+                    const matchBR = data.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                    if (matchBR) {
+                        const [_, dia, mes, ano] = matchBR;
+                        return new Date(ano, mes - 1, dia);
+                    }
+                    
+                    // Tentar formato aaaa-mm-dd
+                    const matchISO = data.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                    if (matchISO) {
+                        const [_, ano, mes, dia] = matchISO;
+                        return new Date(ano, mes - 1, dia);
+                    }
+                    
+                    // Tentar parse direto
+                    const parsed = new Date(data);
+                    return isNaN(parsed.getTime()) ? null : parsed;
+                }
+                
+                // Se é número (serial do Excel)
+                if (typeof data === 'number') {
+                    const date = new Date((data - 25569) * 86400 * 1000);
+                    return isNaN(date.getTime()) ? null : date;
+                }
+                
+                return null;
+            } catch (error) {
+                console.warn('Erro ao processar data:', data, error);
+                return null;
+            }
+        }
+
+        // Processar entrada de cana robustamente
+        function processarEntradaCana(row) {
+            const possibleKeys = [
+                'entrada de cana', 'entradadecana', 'cana', 'toneladas', 
+                'ton', 'entrada', 'quantidade', 'peso'
+            ];
+            
+            for (const key of possibleKeys) {
+                if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+                    const value = row[key];
+                    
+                    // Se é número
+                    if (typeof value === 'number') {
+                        return Math.max(0, value);
+                    }
+                    
+                    // Se é string
+                    if (typeof value === 'string') {
+                        const cleaned = value
+                            .replace(/[^\d,.-]/g, '')
+                            .replace(',', '.');
+                        
+                        const parsed = parseFloat(cleaned);
+                        return isNaN(parsed) ? 0 : Math.max(0, parsed);
+                    }
+                }
+            }
+            
+            return 0;
         }
 
         // Aplicar restrições de usuário
         function applyUserRestrictions() {
             if (currentUser.restricted && currentUser.allowedFronts.length > 0) {
-                // Filtrar dados apenas pelas frentes permitidas
                 filteredData = excelData.filter(row => 
                     currentUser.allowedFronts.includes(String(row.Frente).trim())
                 );
-                
-                // Atualizar campo de frente para mostrar apenas frentes permitidas
                 updateFrenteFilter();
             } else {
-                // Usuário sem restrições - acesso total
                 filteredData = [...excelData];
             }
             
             displayData(filteredData);
         }
 
-        // Atualizar filtro de frente para usuários restritos
+        // Atualizar filtro de frente
         function updateFrenteFilter() {
             if (currentUser.restricted && currentUser.allowedFronts.length > 0) {
-                // Criar datalist com frentes permitidas
                 let datalist = document.getElementById('frentesPermitidas');
                 if (!datalist) {
                     datalist = document.createElement('datalist');
@@ -841,22 +1026,15 @@
                     document.body.appendChild(datalist);
                 }
                 
-                // Limpar opções anteriores
-                datalist.innerHTML = '';
+                datalist.innerHTML = currentUser.allowedFronts
+                    .map(frente => `<option value="${frente}">`)
+                    .join('');
                 
-                // Adicionar novas opções
-                currentUser.allowedFronts.forEach(frente => {
-                    const option = document.createElement('option');
-                    option.value = frente;
-                    datalist.appendChild(option);
-                });
-                
-                // Vincular datalist ao campo de filtro
                 filterFrente.setAttribute('list', 'frentesPermitidas');
-                filterFrente.placeholder = 'Frentes: ' + currentUser.allowedFronts.join(', ');
+                filterFrente.placeholder = `Frentes permitidas: ${currentUser.allowedFronts.join(', ')}`;
             } else {
                 filterFrente.removeAttribute('list');
-                filterFrente.placeholder = 'Frente';
+                filterFrente.placeholder = 'Número da frente';
             }
         }
 
@@ -875,11 +1053,9 @@
             resultsCount.textContent = `Total: ${data.length} registros`;
             
             // Calcular total de toneladas
-            const totalToneladasValor = data.reduce((total, row) => {
-                return total + (row['Entrada de Cana'] || 0);
-            }, 0);
-            
-            console.log('Total de toneladas calculado:', totalToneladasValor);
+            const totalToneladasValor = data.reduce((total, row) => 
+                total + (row['Entrada de Cana'] || 0), 0
+            );
             
             toneladasValue.textContent = totalToneladasValor.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
@@ -887,25 +1063,18 @@
             });
             totalToneladas.style.display = 'flex';
             
+            // Preencher tabela
             data.forEach(row => {
                 const tr = document.createElement('tr');
                 
-                // Formatar data para exibição
-                let dataExibicao = '';
-                if (row.Data && row.Data instanceof Date && !isNaN(row.Data)) {
-                    dataExibicao = row.Data.toLocaleDateString('pt-BR');
-                } else if (row.Data) {
-                    dataExibicao = String(row.Data);
-                }
+                const dataExibicao = row.Data && !isNaN(row.Data.getTime()) 
+                    ? row.Data.toLocaleDateString('pt-BR')
+                    : 'Data inválida';
                 
-                // Formatar entrada de cana para exibição
-                let entradaCanaExibicao = '0,00';
-                if (row['Entrada de Cana'] !== undefined && row['Entrada de Cana'] !== null) {
-                    entradaCanaExibicao = Number(row['Entrada de Cana']).toLocaleString('pt-BR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-                }
+                const entradaCanaExibicao = (row['Entrada de Cana'] || 0).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
                 
                 tr.innerHTML = `
                     <td>${dataExibicao}</td>
@@ -925,11 +1094,9 @@
             if (filteredData.length === 0) return;
             
             const finalFilteredData = filteredData.filter(row => {
-                // Filtro por período de data
+                // Filtro por data
                 if (filterDataInicio.value || filterDataFim.value) {
-                    if (!row.Data || !(row.Data instanceof Date) || isNaN(row.Data)) {
-                        return false;
-                    }
+                    if (!row.Data || isNaN(row.Data.getTime())) return false;
                     
                     const dataRow = new Date(row.Data);
                     
@@ -945,27 +1112,17 @@
                     }
                 }
                 
-                // Filtro por frente (já pré-filtrado para usuários restritos)
-                if (filterFrente.value && !String(row.Frente || '').toLowerCase().includes(filterFrente.value.toLowerCase())) {
-                    return false;
-                }
+                // Outros filtros
+                const filters = [
+                    { field: 'Frente', value: filterFrente.value },
+                    { field: 'Cód. Fazenda', value: filterCodFazenda.value },
+                    { field: 'Zona', value: filterZona.value },
+                    { field: 'Talhão', value: filterTalhao.value }
+                ];
                 
-                // Filtro por código da fazenda
-                if (filterCodFazenda.value && !String(row['Cód. Fazenda'] || '').toLowerCase().includes(filterCodFazenda.value.toLowerCase())) {
-                    return false;
-                }
-                
-                // Filtro por zona
-                if (filterZona.value && !String(row.Zona || '').toLowerCase().includes(filterZona.value.toLowerCase())) {
-                    return false;
-                }
-                
-                // Filtro por talhão
-                if (filterTalhao.value && !String(row.Talhão || '').toLowerCase().includes(filterTalhao.value.toLowerCase())) {
-                    return false;
-                }
-                
-                return true;
+                return filters.every(({ field, value }) => 
+                    !value || String(row[field] || '').toLowerCase().includes(value.toLowerCase())
+                );
             });
             
             displayData(finalFilteredData);
@@ -973,24 +1130,23 @@
 
         // Limpar filtros
         function clearFilters() {
-            filterDataInicio.value = '';
-            filterDataFim.value = '';
-            filterFrente.value = '';
-            filterCodFazenda.value = '';
-            filterZona.value = '';
-            filterTalhao.value = '';
+            [filterDataInicio, filterDataFim, filterFrente, filterCodFazenda, filterZona, filterTalhao]
+                .forEach(input => input.value = '');
             
             displayData(filteredData);
         }
 
         // Exportar para CSV
         function exportToCSV() {
-            if (filteredData.length === 0) return;
+            if (filteredData.length === 0) {
+                showError('Não há dados para exportar');
+                return;
+            }
             
             const currentData = getCurrentFilteredData();
             
             if (currentData.length === 0) {
-                alert('Não há dados para exportar');
+                showError('Nenhum dado encontrado com os filtros aplicados');
                 return;
             }
             
@@ -998,20 +1154,14 @@
             let csvContent = headers.join(';') + '\n';
             
             currentData.forEach(row => {
-                let dataCSV = '';
-                if (row.Data && row.Data instanceof Date && !isNaN(row.Data)) {
-                    dataCSV = row.Data.toLocaleDateString('pt-BR');
-                } else if (row.Data) {
-                    dataCSV = String(row.Data);
-                }
+                const dataCSV = row.Data && !isNaN(row.Data.getTime()) 
+                    ? row.Data.toLocaleDateString('pt-BR')
+                    : '';
                 
-                let entradaCanaCSV = '0,00';
-                if (row['Entrada de Cana'] !== undefined && row['Entrada de Cana'] !== null) {
-                    entradaCanaCSV = Number(row['Entrada de Cana']).toLocaleString('pt-BR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-                }
+                const entradaCanaCSV = (row['Entrada de Cana'] || 0).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
                 
                 const values = [
                     dataCSV,
@@ -1021,6 +1171,7 @@
                     row.Talhão || '',
                     entradaCanaCSV
                 ];
+                
                 csvContent += values.join(';') + '\n';
             });
             
@@ -1037,16 +1188,13 @@
 
         // Obter dados filtrados atuais
         function getCurrentFilteredData() {
-            if (!filterDataInicio.value && !filterDataFim.value && !filterFrente.value && 
-                !filterCodFazenda.value && !filterZona.value && !filterTalhao.value) {
-                return filteredData;
-            }
+            const hasFilters = [filterDataInicio, filterDataFim, filterFrente, filterCodFazenda, filterZona, filterTalhao]
+                .some(input => input.value);
             
-            return filteredData.filter(row => {
+            return hasFilters ? filteredData.filter(row => {
+                // Aplicar mesma lógica de filtro do applyFilters
                 if (filterDataInicio.value || filterDataFim.value) {
-                    if (!row.Data || !(row.Data instanceof Date) || isNaN(row.Data)) {
-                        return false;
-                    }
+                    if (!row.Data || isNaN(row.Data.getTime())) return false;
                     
                     const dataRow = new Date(row.Data);
                     
@@ -1062,24 +1210,22 @@
                     }
                 }
                 
-                if (filterFrente.value && !String(row.Frente || '').toLowerCase().includes(filterFrente.value.toLowerCase())) {
-                    return false;
-                }
+                const filters = [
+                    { field: 'Frente', value: filterFrente.value },
+                    { field: 'Cód. Fazenda', value: filterCodFazenda.value },
+                    { field: 'Zona', value: filterZona.value },
+                    { field: 'Talhão', value: filterTalhao.value }
+                ];
                 
-                if (filterCodFazenda.value && !String(row['Cód. Fazenda'] || '').toLowerCase().includes(filterCodFazenda.value.toLowerCase())) {
-                    return false;
-                }
-                
-                if (filterZona.value && !String(row.Zona || '').toLowerCase().includes(filterZona.value.toLowerCase())) {
-                    return false;
-                }
-                
-                if (filterTalhao.value && !String(row.Talhão || '').toLowerCase().includes(filterTalhao.value.toLowerCase())) {
-                    return false;
-                }
-                
-                return true;
-            });
+                return filters.every(({ field, value }) => 
+                    !value || String(row[field] || '').toLowerCase().includes(value.toLowerCase())
+                );
+            }) : filteredData;
+        }
+
+        // Mostrar erro
+        function showError(message) {
+            alert(`Erro: ${message}`);
         }
     </script>
 </body>
