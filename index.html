@@ -582,7 +582,7 @@
         // Dados do sistema com restrições
         const users = [
             { 
-                username: 'ismael', 
+                username: 'Ismael', 
                 password: '~140819i', 
                 type: 'admin',
                 restricted: false,
@@ -600,7 +600,7 @@
                 password: 'felipe123', 
                 type: 'user',
                 restricted: false,
-                allowedFronts: ['155', '153', '156', '149', '158'] // Array vazio = acesso total
+                allowedFronts: [] // Array vazio = acesso total
             }
         ];
 
@@ -704,7 +704,7 @@
             }
         }
 
-        // Carregar dados do Excel
+        // Carregar dados do Excel - VERSÃO CORRIGIDA
         function loadExcelData() {
             loadingIndicator.style.display = 'block';
             noResults.style.display = 'none';
@@ -722,8 +722,14 @@
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     
-                    // Converter para JSON com tratamento de datas
-                    const rawData = XLSX.utils.sheet_to_json(worksheet, { raw: false });
+                    // DEBUG: Verificar estrutura da planilha
+                    console.log('Estrutura da planilha:', XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0]);
+                    
+                    // Converter para JSON mantendo valores brutos
+                    const rawData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    // DEBUG: Verificar primeiros registros
+                    console.log('Primeiros registros brutos:', rawData.slice(0, 3));
                     
                     // Processar dados para formatar corretamente
                     excelData = rawData.map(row => {
@@ -735,6 +741,9 @@
                                 const partes = row.Data.split('/');
                                 if (partes.length === 3) {
                                     dataFormatada = new Date(partes[2], partes[1] - 1, partes[0]);
+                                } else {
+                                    // Tentar parse como data normal
+                                    dataFormatada = new Date(row.Data);
                                 }
                             } else if (typeof row.Data === 'number') {
                                 // Número serial do Excel - correção de fuso
@@ -743,20 +752,40 @@
                                 // Compensar fuso horário
                                 const offset = date.getTimezoneOffset() * 60000;
                                 dataFormatada = new Date(date.getTime() + offset);
+                            } else if (row.Data instanceof Date) {
+                                dataFormatada = row.Data;
                             }
                         }
                         
-                        // Garantir que a entrada de cana seja um número
+                        // TRATAMENTO CORRIGIDO PARA ENTRADA DE CANA
                         let entradaCana = 0;
-                        if (row['Entrada de Cana'] !== undefined && row['Entrada de Cana'] !== null) {
-                            const valor = row['Entrada de Cana'];
+                        
+                        // Buscar a coluna de entrada de cana por diferentes nomes possíveis
+                        const entradaCanaKey = Object.keys(row).find(key => 
+                            key.toLowerCase().includes('entrada') || 
+                            key.toLowerCase().includes('cana') ||
+                            key.toLowerCase().includes('ton') ||
+                            key.toLowerCase().includes('tonelada')
+                        );
+                        
+                        console.log('Chave encontrada para entrada de cana:', entradaCanaKey);
+                        
+                        if (entradaCanaKey && row[entradaCanaKey] !== undefined && row[entradaCanaKey] !== null) {
+                            const valor = row[entradaCanaKey];
+                            console.log('Valor bruto da entrada de cana:', valor, 'Tipo:', typeof valor);
+                            
                             if (typeof valor === 'string') {
-                                const valorLimpo = valor.replace(/[^\d,.]/g, '').replace(',', '.');
+                                // Remover caracteres não numéricos exceto ponto, vírgula e negativo
+                                const valorLimpo = valor
+                                    .replace(/[^\d,-.]/g, '')
+                                    .replace(',', '.');
                                 entradaCana = parseFloat(valorLimpo) || 0;
-                            } else {
-                                entradaCana = Number(valor) || 0;
+                            } else if (typeof valor === 'number') {
+                                entradaCana = valor;
                             }
                         }
+                        
+                        console.log('Entrada de cana processada:', entradaCana);
                         
                         return {
                             Data: dataFormatada,
@@ -767,6 +796,9 @@
                             'Entrada de Cana': entradaCana
                         };
                     });
+                    
+                    // DEBUG: Verificar dados processados
+                    console.log('Dados processados:', excelData.slice(0, 3));
                     
                     // Aplicar restrição de frentes para usuário dgagro
                     applyUserRestrictions();
@@ -846,6 +878,8 @@
             const totalToneladasValor = data.reduce((total, row) => {
                 return total + (row['Entrada de Cana'] || 0);
             }, 0);
+            
+            console.log('Total de toneladas calculado:', totalToneladasValor);
             
             toneladasValue.textContent = totalToneladasValor.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
