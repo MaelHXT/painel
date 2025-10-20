@@ -30,12 +30,13 @@
             background-color: #f5f7fa;
             color: #333;
             line-height: 1.6;
+            min-height: 100vh;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 15px;
         }
 
         /* Tela de Login */
@@ -45,11 +46,12 @@
             align-items: center;
             min-height: 100vh;
             background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            padding: 20px;
         }
 
         .login-box {
             background: white;
-            padding: 40px;
+            padding: 30px;
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
             width: 100%;
@@ -58,7 +60,7 @@
         }
 
         .login-box h1 {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             color: var(--primary-color);
             font-size: 24px;
         }
@@ -91,8 +93,11 @@
         }
 
         .btn {
-            display: inline-block;
-            padding: 12px 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
             background-color: var(--secondary-color);
             color: white;
             border: none;
@@ -102,6 +107,7 @@
             font-weight: 600;
             transition: var(--transition);
             text-align: center;
+            white-space: nowrap;
         }
 
         .btn:hover {
@@ -132,14 +138,22 @@
             box-shadow: var(--box-shadow);
             margin-bottom: 20px;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
         }
 
         .user-info {
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .user-badge {
@@ -169,24 +183,21 @@
 
         .filters-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-bottom: 15px;
         }
 
         .date-range {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
-            align-items: center;
-        }
-
-        .date-range .form-group {
-            flex: 1;
         }
 
         .actions {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .btn-secondary {
@@ -206,9 +217,11 @@
 
         .results-header {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            gap: 15px;
         }
 
         .results-count {
@@ -218,21 +231,27 @@
 
         .total-toneladas {
             background-color: #e8f5e9;
-            padding: 10px 15px;
+            padding: 12px 15px;
             border-radius: var(--border-radius);
             margin-bottom: 15px;
             font-weight: 600;
             color: var(--success-color);
             border-left: 4px solid var(--success-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .table-container {
             overflow-x: auto;
+            border-radius: var(--border-radius);
+            border: 1px solid #eee;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 600px;
         }
 
         .data-table th,
@@ -246,6 +265,8 @@
             background-color: #f8f9fa;
             font-weight: 600;
             color: var(--dark-color);
+            position: sticky;
+            top: 0;
         }
 
         .data-table tr:hover {
@@ -282,28 +303,74 @@
 
         /* Responsividade */
         @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
             .filters-grid {
                 grid-template-columns: 1fr;
             }
             
             .date-range {
-                flex-direction: column;
+                grid-template-columns: 1fr;
             }
             
             .header {
                 flex-direction: column;
-                gap: 15px;
                 align-items: flex-start;
+            }
+            
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            
+            .user-info {
+                width: 100%;
+                justify-content: space-between;
             }
             
             .actions {
                 width: 100%;
-                flex-wrap: wrap;
             }
             
             .btn {
                 flex: 1;
                 min-width: 120px;
+                font-size: 14px;
+                padding: 10px 15px;
+            }
+            
+            .filters-container,
+            .results-container {
+                padding: 15px;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+            
+            .login-box {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .btn {
+                min-width: 100px;
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+            
+            .total-toneladas {
+                flex-direction: column;
+                gap: 5px;
+                text-align: center;
             }
         }
     </style>
@@ -354,25 +421,34 @@
                     </div>
                     <div class="form-group">
                         <label for="filterFrente">Frente</label>
-                        <input type="text" id="filterFrente" class="form-control">
+                        <input type="text" id="filterFrente" class="form-control" placeholder="Frente">
                     </div>
                     <div class="form-group">
                         <label for="filterCodFazenda">Cód. Fazenda</label>
-                        <input type="text" id="filterCodFazenda" class="form-control">
+                        <input type="text" id="filterCodFazenda" class="form-control" placeholder="Cód. Fazenda">
                     </div>
                     <div class="form-group">
                         <label for="filterZona">Zona</label>
-                        <input type="text" id="filterZona" class="form-control">
+                        <input type="text" id="filterZona" class="form-control" placeholder="Zona">
                     </div>
                     <div class="form-group">
                         <label for="filterTalhao">Talhão</label>
-                        <input type="text" id="filterTalhao" class="form-control">
+                        <input type="text" id="filterTalhao" class="form-control" placeholder="Talhão">
                     </div>
                 </div>
                 <div class="actions">
-                    <button class="btn" id="searchBtn">🔍 Pesquisar</button>
-                    <button class="btn btn-secondary" id="clearBtn">🔄 Limpar Filtros</button>
-                    <button class="btn btn-secondary" id="exportBtn">📥 Exportar CSV</button>
+                    <button class="btn" id="searchBtn">
+                        <span>🔍</span>
+                        <span>Pesquisar</span>
+                    </button>
+                    <button class="btn btn-secondary" id="clearBtn">
+                        <span>🔄</span>
+                        <span>Limpar Filtros</span>
+                    </button>
+                    <button class="btn btn-secondary" id="exportBtn">
+                        <span>📥</span>
+                        <span>Exportar CSV</span>
+                    </button>
                 </div>
             </div>
 
@@ -383,7 +459,8 @@
                 </div>
                 
                 <div class="total-toneladas" id="totalToneladas" style="display: none;">
-                    Total de Toneladas: <span id="toneladasValue">0</span>
+                    <span>Total de Toneladas:</span>
+                    <span id="toneladasValue">0,00</span>
                 </div>
                 
                 <div class="loading" id="loadingIndicator">
@@ -419,7 +496,7 @@
     <script>
         // Dados do sistema
         const users = [
-            { username: 'Ismael', password: '~140819i', type: 'admin' },
+            { username: 'ismael', password: '~140819i', type: 'admin' },
             { username: 'dgagro', password: 'dgagro123', type: 'user' },
             { username: 'felipe', password: 'felipe123', type: 'user' }
         ];
@@ -539,8 +616,9 @@
                         if (row.Data) {
                             // Se for um número serial do Excel, converter para data
                             if (typeof row.Data === 'number') {
-                                dataFormatada = XLSX.SSF.parse_date_code(row.Data);
-                                dataFormatada = new Date(dataFormatada.y, dataFormatada.m - 1, dataFormatada.d);
+                                const excelDate = row.Data;
+                                const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000);
+                                dataFormatada = date;
                             } else if (typeof row.Data === 'string') {
                                 dataFormatada = new Date(row.Data);
                             } else if (row.Data instanceof Date) {
@@ -550,15 +628,29 @@
                         
                         // Garantir que a entrada de cana seja um número
                         let entradaCana = 0;
-                        if (row['Entrada de Cana']) {
-                            entradaCana = typeof row['Entrada de Cana'] === 'string' 
-                                ? parseFloat(row['Entrada de Cana'].replace(',', '.')) 
-                                : Number(row['Entrada de Cana']);
+                        const entradaCanaKey = Object.keys(row).find(key => 
+                            key.toLowerCase().includes('entrada') || 
+                            key.toLowerCase().includes('cana') ||
+                            key.toLowerCase().includes('ton')
+                        );
+                        
+                        if (entradaCanaKey && row[entradaCanaKey]) {
+                            const valor = row[entradaCanaKey];
+                            if (typeof valor === 'string') {
+                                // Remover caracteres não numéricos exceto ponto e vírgula
+                                const valorLimpo = valor.replace(/[^\d,.]/g, '').replace(',', '.');
+                                entradaCana = parseFloat(valorLimpo) || 0;
+                            } else {
+                                entradaCana = Number(valor) || 0;
+                            }
                         }
                         
                         return {
-                            ...row,
                             Data: dataFormatada,
+                            Frente: row.Frente || '',
+                            'Cód. Fazenda': row['Cód. Fazenda'] || '',
+                            Zona: row.Zona || '',
+                            Talhão: row.Talhão || '',
                             'Entrada de Cana': entradaCana
                         };
                     });
@@ -598,7 +690,7 @@
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
-            totalToneladas.style.display = 'block';
+            totalToneladas.style.display = 'flex';
             
             data.forEach(row => {
                 const tr = document.createElement('tr');
@@ -612,7 +704,7 @@
                 }
                 
                 // Formatar entrada de cana para exibição
-                let entradaCanaExibicao = '';
+                let entradaCanaExibicao = '0,00';
                 if (row['Entrada de Cana'] !== undefined && row['Entrada de Cana'] !== null) {
                     entradaCanaExibicao = Number(row['Entrada de Cana']).toLocaleString('pt-BR', {
                         minimumFractionDigits: 2,
@@ -710,8 +802,8 @@
             }
             
             // Criar conteúdo CSV
-            const headers = ['Data', 'Frente', 'Cód. Fazenda', 'Zona', 'Talhão', 'Entrada de Cana'];
-            let csvContent = headers.join(',') + '\n';
+            const headers = ['Data', 'Frente', 'Cód. Fazenda', 'Zona', 'Talhão', 'Entrada de Cana (ton)'];
+            let csvContent = headers.join(';') + '\n';
             
             currentData.forEach(row => {
                 // Formatar data para CSV
@@ -723,7 +815,7 @@
                 }
                 
                 // Formatar entrada de cana para CSV
-                let entradaCanaCSV = '';
+                let entradaCanaCSV = '0,00';
                 if (row['Entrada de Cana'] !== undefined && row['Entrada de Cana'] !== null) {
                     entradaCanaCSV = Number(row['Entrada de Cana']).toLocaleString('pt-BR', {
                         minimumFractionDigits: 2,
@@ -739,7 +831,7 @@
                     row.Talhão || '',
                     entradaCanaCSV
                 ];
-                csvContent += values.join(',') + '\n';
+                csvContent += values.join(';') + '\n';
             });
             
             // Criar e baixar arquivo
