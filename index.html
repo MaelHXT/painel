@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgroCan - Sistema de Consulta de Cana</title>
+    <title>Ismael AgroCan - Sistema de Consulta de Colheita</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -253,7 +253,7 @@
 
         .weather-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
         }
@@ -444,6 +444,136 @@
             margin: 0 auto 15px;
         }
 
+        /* Notícias */
+        .news-container {
+            background: var(--white);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .news-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary-blue);
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .news-card {
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .news-image {
+            height: 160px;
+            background-color: var(--light-gray);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .news-content {
+            padding: 20px;
+        }
+
+        .news-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            color: var(--text-dark);
+        }
+
+        .news-date {
+            color: var(--dark-gray);
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        .news-excerpt {
+            color: var(--dark-gray);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .news-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--secondary-blue);
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .news-link:hover {
+            text-decoration: underline;
+        }
+
+        .news-loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--dark-gray);
+        }
+
+        /* Abas */
+        .tabs-container {
+            margin-bottom: 25px;
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--white);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            background: var(--light-gray);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            color: var(--dark-gray);
+        }
+
+        .tab.active {
+            background: var(--white);
+            color: var(--primary-blue);
+            border-bottom: 3px solid var(--primary-blue);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -458,6 +588,10 @@
             
             .weather-content {
                 grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            }
+            
+            .news-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             }
         }
 
@@ -501,6 +635,14 @@
             
             .weather-content {
                 grid-template-columns: 1fr;
+            }
+            
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
             }
         }
 
@@ -582,115 +724,145 @@
                 </div>
             </div>
 
-            <!-- Widget do Tempo -->
-            <div class="weather-widget" id="weatherWidget">
-                <div class="weather-header">
-                    <h3><i class="fas fa-cloud-sun"></i> Condições Meteorológicas - IPMet</h3>
-                    <span id="weatherLastUpdate"></span>
-                </div>
-                <div class="weather-content" id="weatherContent">
-                    <!-- Dados do tempo serão carregados aqui -->
+            <!-- Abas -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <div class="tab active" data-tab="dados">Dados de Colheita</div>
+                    <div class="tab" data-tab="noticias">Notícias do Agro</div>
                 </div>
             </div>
 
-            <!-- Filtros -->
-            <div class="filters-container">
-                <div class="filters-grid">
-                    <div class="date-range-container">
+            <!-- Conteúdo da Aba Dados -->
+            <div class="tab-content active" id="dados-tab">
+                <!-- Widget do Tempo -->
+                <div class="weather-widget" id="weatherWidget">
+                    <div class="weather-header">
+                        <h3><i class="fas fa-cloud-sun"></i> Condições Meteorológicas - Região de Campinas/SP</h3>
+                        <span id="weatherLastUpdate"></span>
+                    </div>
+                    <div class="weather-content" id="weatherContent">
+                        <!-- Dados do tempo serão carregados aqui -->
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filters-container">
+                    <div class="filters-grid">
+                        <div class="date-range-container">
+                            <div class="form-group">
+                                <label for="filterDataInicio"><i class="fas fa-calendar-alt"></i> Data Início</label>
+                                <input type="date" id="filterDataInicio" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="filterDataFim"><i class="fas fa-calendar-alt"></i> Data Fim</label>
+                                <input type="date" id="filterDataFim" class="form-control">
+                            </div>
+                        </div>
+                        
                         <div class="form-group">
-                            <label for="filterDataInicio"><i class="fas fa-calendar-alt"></i> Data Início</label>
-                            <input type="date" id="filterDataInicio" class="form-control">
+                            <label for="filterFrente"><i class="fas fa-tractor"></i> Frente</label>
+                            <input type="text" id="filterFrente" class="form-control" placeholder="Número da frente">
                         </div>
                         <div class="form-group">
-                            <label for="filterDataFim"><i class="fas fa-calendar-alt"></i> Data Fim</label>
-                            <input type="date" id="filterDataFim" class="form-control">
+                            <label for="filterCodFazenda"><i class="fas fa-map-marker-alt"></i> Cód. Fazenda</label>
+                            <input type="text" id="filterCodFazenda" class="form-control" placeholder="Código da fazenda">
+                        </div>
+                        <div class="form-group">
+                            <label for="filterZona"><i class="fas fa-map"></i> Zona</label>
+                            <input type="text" id="filterZona" class="form-control" placeholder="Zona">
+                        </div>
+                        <div class="form-group">
+                            <label for="filterTalhao"><i class="fas fa-border-all"></i> Talhão</label>
+                            <input type="text" id="filterTalhao" class="form-control" placeholder="Talhão">
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn" id="searchBtn">
+                            <i class="fas fa-search"></i>
+                            Pesquisar
+                        </button>
+                        <button class="btn btn-success" id="clearBtn">
+                            <i class="fas fa-broom"></i>
+                            Limpar Filtros
+                        </button>
+                        <button class="btn btn-warning" id="exportBtn">
+                            <i class="fas fa-file-export"></i>
+                            Exportar CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resultados -->
+                <div class="results-container">
+                    <div class="results-header">
+                        <h2><i class="fas fa-table"></i> Resultados da Consulta</h2>
+                        <div class="results-count" id="resultsCount">
+                            <i class="fas fa-chart-bar"></i> Total: 0 registros
                         </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="filterFrente"><i class="fas fa-tractor"></i> Frente</label>
-                        <input type="text" id="filterFrente" class="form-control" placeholder="Número da frente">
+                    <!-- Mensagem de restrição -->
+                    <div class="user-restriction-info" id="userRestrictionInfo" style="display: none;">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Aviso de Restrição:</strong> Seu acesso está limitado às frentes
                     </div>
-                    <div class="form-group">
-                        <label for="filterCodFazenda"><i class="fas fa-map-marker-alt"></i> Cód. Fazenda</label>
-                        <input type="text" id="filterCodFazenda" class="form-control" placeholder="Código da fazenda">
+                    
+                    <!-- Total de Toneladas -->
+                    <div class="total-toneladas" id="totalToneladas" style="display: none;">
+                        <span><i class="fas fa-weight-hanging"></i> Total de Toneladas Processadas:</span>
+                        <span id="toneladasValue">0,00</span>
                     </div>
-                    <div class="form-group">
-                        <label for="filterZona"><i class="fas fa-map"></i> Zona</label>
-                        <input type="text" id="filterZona" class="form-control" placeholder="Zona">
+                    
+                    <!-- Loading -->
+                    <div class="loading" id="loadingIndicator">
+                        <div class="spinner"></div>
+                        <p>Processando dados...</p>
                     </div>
-                    <div class="form-group">
-                        <label for="filterTalhao"><i class="fas fa-border-all"></i> Talhão</label>
-                        <input type="text" id="filterTalhao" class="form-control" placeholder="Talhão">
+                    
+                    <!-- Tabela de Resultados -->
+                    <div class="table-container">
+                        <table class="data-table" id="resultsTable">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-calendar"></i> Data</th>
+                                    <th><i class="fas fa-tractor"></i> Frente</th>
+                                    <th><i class="fas fa-map-marker-alt"></i> Cód. Fazenda</th>
+                                    <th><i class="fas fa-map"></i> Zona</th>
+                                    <th><i class="fas fa-border-all"></i> Talhão</th>
+                                    <th><i class="fas fa-weight-hanging"></i> Entrada de Cana (ton)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- Dados serão inseridos aqui dinamicamente -->
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-                <div class="actions">
-                    <button class="btn" id="searchBtn">
-                        <i class="fas fa-search"></i>
-                        Pesquisar
-                    </button>
-                    <button class="btn btn-success" id="clearBtn">
-                        <i class="fas fa-broom"></i>
-                        Limpar Filtros
-                    </button>
-                    <button class="btn btn-warning" id="exportBtn">
-                        <i class="fas fa-file-export"></i>
-                        Exportar CSV
-                    </button>
+                    
+                    <!-- Sem Resultados -->
+                    <div class="no-results" id="noResults" style="display: none;">
+                        <i class="fas fa-inbox"></i>
+                        <h3>Nenhum resultado encontrado</h3>
+                        <p>Verifique os filtros aplicados ou tente ajustar os critérios de pesquisa.</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Resultados -->
-            <div class="results-container">
-                <div class="results-header">
-                    <h2><i class="fas fa-table"></i> Resultados da Consulta</h2>
-                    <div class="results-count" id="resultsCount">
-                        <i class="fas fa-chart-bar"></i> Total: 0 registros
+            <!-- Conteúdo da Aba Notícias -->
+            <div class="tab-content" id="noticias-tab">
+                <div class="news-container">
+                    <div class="news-header">
+                        <h2><i class="fas fa-newspaper"></i> Últimas Notícias do Agro</h2>
+                        <button class="btn" id="refreshNewsBtn">
+                            <i class="fas fa-sync-alt"></i> Atualizar
+                        </button>
                     </div>
-                </div>
-                
-                <!-- Mensagem de restrição -->
-                <div class="user-restriction-info" id="userRestrictionInfo" style="display: none;">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>Aviso de Restrição:</strong> Seu acesso está limitado às frentes
-                </div>
-                
-                <!-- Total de Toneladas -->
-                <div class="total-toneladas" id="totalToneladas" style="display: none;">
-                    <span><i class="fas fa-weight-hanging"></i> Total de Toneladas Processadas:</span>
-                    <span id="toneladasValue">0,00</span>
-                </div>
-                
-                <!-- Loading -->
-                <div class="loading" id="loadingIndicator">
-                    <div class="spinner"></div>
-                    <p>Processando dados...</p>
-                </div>
-                
-                <!-- Tabela de Resultados -->
-                <div class="table-container">
-                    <table class="data-table" id="resultsTable">
-                        <thead>
-                            <tr>
-                                <th><i class="fas fa-calendar"></i> Data</th>
-                                <th><i class="fas fa-tractor"></i> Frente</th>
-                                <th><i class="fas fa-map-marker-alt"></i> Cód. Fazenda</th>
-                                <th><i class="fas fa-map"></i> Zona</th>
-                                <th><i class="fas fa-border-all"></i> Talhão</th>
-                                <th><i class="fas fa-weight-hanging"></i> Entrada de Cana (ton)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                            <!-- Dados serão inseridos aqui dinamicamente -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Sem Resultados -->
-                <div class="no-results" id="noResults" style="display: none;">
-                    <i class="fas fa-inbox"></i>
-                    <h3>Nenhum resultado encontrado</h3>
-                    <p>Verifique os filtros aplicados ou tente ajustar os critérios de pesquisa.</p>
+                    <div class="news-grid" id="newsGrid">
+                        <!-- Notícias serão carregadas aqui -->
+                    </div>
+                    <div class="news-loading" id="newsLoading">
+                        <div class="spinner"></div>
+                        <p>Carregando notícias...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -748,6 +920,11 @@
         const weatherWidget = document.getElementById('weatherWidget');
         const weatherContent = document.getElementById('weatherContent');
         const weatherLastUpdate = document.getElementById('weatherLastUpdate');
+        const newsGrid = document.getElementById('newsGrid');
+        const newsLoading = document.getElementById('newsLoading');
+        const refreshNewsBtn = document.getElementById('refreshNewsBtn');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
 
         // Filtros
         const filterDataInicio = document.getElementById('filterDataInicio');
@@ -764,10 +941,35 @@
             searchBtn.addEventListener('click', applyFilters);
             clearBtn.addEventListener('click', clearFilters);
             exportBtn.addEventListener('click', exportToCSV);
+            refreshNewsBtn.addEventListener('click', loadNews);
+            
+            // Configurar abas
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
             
             // Carregar dados do tempo
             loadWeatherData();
         });
+
+        // Função para alternar entre abas
+        function switchTab(tabId) {
+            // Remover classe active de todas as abas e conteúdos
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Adicionar classe active à aba selecionada
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+            
+            // Se for a aba de notícias, carregar as notícias
+            if (tabId === 'noticias') {
+                loadNews();
+            }
+        }
 
         // Função de login
         function handleLogin(e) {
@@ -829,14 +1031,16 @@
             }
         }
 
-        // Carregar dados do tempo (simulação - IPMet)
+        // Carregar dados do tempo para a região de Campinas/SP
         function loadWeatherData() {
+            // Simulação de dados meteorológicos para a região de Campinas/SP
             const weatherConditions = [
                 { icon: 'fa-temperature-high', label: 'Temperatura', value: '28°C' },
                 { icon: 'fa-tint', label: 'Umidade', value: '65%' },
                 { icon: 'fa-wind', label: 'Veloc. Vento', value: '12 km/h' },
                 { icon: 'fa-cloud', label: 'Precipitação', value: '0 mm' },
-                { icon: 'fa-sun', label: 'Índice UV', value: 'Moderado' }
+                { icon: 'fa-sun', label: 'Índice UV', value: 'Moderado' },
+                { icon: 'fa-compress-alt', label: 'Pressão', value: '1015 hPa' }
             ];
             
             weatherContent.innerHTML = weatherConditions.map(condition => `
@@ -1088,19 +1292,21 @@
             });
         }
 
-        // Aplicar filtros
+        // Aplicar filtros - CORREÇÃO DO FILTRO DE DATA
         function applyFilters() {
             if (filteredData.length === 0) return;
             
             const finalFilteredData = filteredData.filter(row => {
-                // Filtro por data
+                // Filtro por data - CORREÇÃO APLICADA
                 if (filterDataInicio.value || filterDataFim.value) {
                     if (!row.Data || isNaN(row.Data.getTime())) return false;
                     
                     const dataRow = new Date(row.Data);
+                    dataRow.setHours(0, 0, 0, 0); // Zerar horas para comparação apenas de data
                     
                     if (filterDataInicio.value) {
                         const dataInicio = new Date(filterDataInicio.value);
+                        dataInicio.setHours(0, 0, 0, 0);
                         if (dataRow < dataInicio) return false;
                     }
                     
@@ -1191,13 +1397,16 @@
                 .some(input => input.value);
             
             return hasFilters ? filteredData.filter(row => {
+                // Filtro por data - CORREÇÃO APLICADA
                 if (filterDataInicio.value || filterDataFim.value) {
                     if (!row.Data || isNaN(row.Data.getTime())) return false;
                     
                     const dataRow = new Date(row.Data);
+                    dataRow.setHours(0, 0, 0, 0); // Zerar horas para comparação apenas de data
                     
                     if (filterDataInicio.value) {
                         const dataInicio = new Date(filterDataInicio.value);
+                        dataInicio.setHours(0, 0, 0, 0);
                         if (dataRow < dataInicio) return false;
                     }
                     
@@ -1219,6 +1428,76 @@
                     !value || String(row[field] || '').toLowerCase().includes(value.toLowerCase())
                 );
             }) : filteredData;
+        }
+
+        // Carregar notícias do agro
+        function loadNews() {
+            newsLoading.style.display = 'block';
+            newsGrid.innerHTML = '';
+            
+            // Simulação de notícias do agro (em um ambiente real, você faria uma requisição para uma API)
+            setTimeout(() => {
+                const news = [
+                    {
+                        title: 'Preço do açúcar atinge máxima em 12 anos com quebra de safra',
+                        date: '15/03/2024',
+                        excerpt: 'A seca no centro-sul do Brasil afetou a produção de cana-de-açúcar, elevando os preços no mercado internacional.',
+                        image: 'https://via.placeholder.com/300x160?text=Not%C3%ADcia+Agro',
+                        link: 'https://agro.estadao.com.br/noticias/mercado,preco-do-acucar-atinge-maxima-em-12-anos-com-quebra-de-safra,70004567890'
+                    },
+                    {
+                        title: 'Tecnologia no campo: drones monitoram plantações de cana',
+                        date: '14/03/2024',
+                        excerpt: 'Produtores rurais adotam drones para monitoramento de pragas e avaliação do desenvolvimento das lavouras.',
+                        image: 'https://via.placeholder.com/300x160?text=Tecnologia+Agro',
+                        link: 'https://agro.estadao.com.br/noticias/tecnologia,tecnologia-no-campo-drones-monitoram-plantacoes-de-cana,70004567891'
+                    },
+                    {
+                        title: 'Exportação de etanol brasileiro cresce 25% no primeiro trimestre',
+                        date: '13/03/2024',
+                        excerpt: 'Demanda internacional por biocombustíveis impulsiona vendas externas do produto.',
+                        image: 'https://via.placeholder.com/300x160?text=Etanol+Exporta%C3%A7%C3%A3o',
+                        link: 'https://agro.estadao.com.br/noticias/mercado,exportacao-de-etanol-brasileiro-cresce-25-no-primeiro-trimestre,70004567892'
+                    },
+                    {
+                        title: 'Mudanças climáticas exigem adaptação no cultivo de cana',
+                        date: '12/03/2024',
+                        excerpt: 'Pesquisadores desenvolvem variedades mais resistentes à seca e às altas temperaturas.',
+                        image: 'https://via.placeholder.com/300x160?text=Mudan%C3%A7as+Clim%C3%A1ticas',
+                        link: 'https://agro.estadao.com.br/noticias/agricultura,mudancas-climaticas-exigem-adaptacao-no-cultivo-de-cana,70004567893'
+                    },
+                    {
+                        title: 'Setor sucroenergético investe R$ 5 bi em bioeletricidade',
+                        date: '11/03/2024',
+                        excerpt: 'Usinas ampliam capacidade de geração de energia a partir do bagaço de cana.',
+                        image: 'https://via.placeholder.com/300x160?text=Bioeletricidade',
+                        link: 'https://agro.estadao.com.br/noticias/energia,setor-sucroenergetico-investe-r-5-bi-em-bioeletricidade,70004567894'
+                    },
+                    {
+                        title: 'Safra de cana-de-açúcar 2024/25 deve superar 630 milhões de toneladas',
+                        date: '10/03/2024',
+                        excerpt: 'Conab projeta crescimento de 3,5% na produção nacional, com destaque para São Paulo e Goiás.',
+                        image: 'https://via.placeholder.com/300x160?text=Safra+2024',
+                        link: 'https://agro.estadao.com.br/noticias/agricultura,safra-de-cana-de-acucar-2024-25-deve-superar-630-milhoes-de-toneladas,70004567895'
+                    }
+                ];
+                
+                newsGrid.innerHTML = news.map(item => `
+                    <div class="news-card">
+                        <div class="news-image" style="background-image: url('${item.image}')"></div>
+                        <div class="news-content">
+                            <div class="news-date">${item.date}</div>
+                            <div class="news-title">${item.title}</div>
+                            <div class="news-excerpt">${item.excerpt}</div>
+                            <a href="${item.link}" target="_blank" class="news-link">
+                                Ler mais <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                `).join('');
+                
+                newsLoading.style.display = 'none';
+            }, 1500); // Simula tempo de carregamento
         }
 
         // Mostrar erro
